@@ -147,6 +147,8 @@
     <Compile Include="Repositories\Interfaces\ICustomerRepository.cs" />
     <Compile Include="Repositories\Interfaces\IProductRepository.cs" />
     <Compile Include="Repositories\ProductRepository.cs" />
+    <Compile Include="Services\CustomerService.cs" />
+    <Compile Include="Services\Interfaces\ICustomerService.cs" />
     <Compile Include="Services\Interfaces\IProductService.cs" />
     <Compile Include="Services\ProductService.cs" />
   </ItemGroup>
