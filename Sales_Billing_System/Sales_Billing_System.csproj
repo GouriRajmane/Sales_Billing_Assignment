@@ -155,7 +155,9 @@
     <Compile Include="Services\CustomerService.cs" />
     <Compile Include="Services\Interfaces\ICustomerService.cs" />
     <Compile Include="Services\Interfaces\IProductService.cs" />
+    <Compile Include="Services\Interfaces\ISalesInvoiceService.cs" />
     <Compile Include="Services\ProductService.cs" />
+    <Compile Include="Services\SalesInvoiceService.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\bootstrap-grid.css" />
