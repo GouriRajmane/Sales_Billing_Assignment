@@ -1,0 +1,137 @@
+﻿@model Sales_Billing_System.Models.Customer_Master
+
+@{
+    ViewBag.Title = "Delete Customer";
+}
+
+<div class="container mt-4">
+
+    <!-- Page Header -->
+    <div class="mb-4">
+
+        <h2 class="mb-1">Delete Customer</h2>
+
+        <p class="text-muted mb-0">
+            Confirm whether you want to delete this customer.
+        </p>
+
+    </div>
+
+
+    <!-- Warning -->
+    <div class="alert alert-warning">
+
+        <strong>Warning!</strong>
+
+        Are you sure you want to delete this customer?
+        This action cannot be undone.
+
+    </div>
+
+
+    <!-- Customer Information -->
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-danger text-white">
+
+            <h5 class="mb-0">
+                Customer Information
+            </h5>
+
+        </div>
+
+
+        <div class="card-body">
+
+            <dl class="row">
+
+                <dt class="col-md-3">
+                    Customer ID
+                </dt>
+
+                <dd class="col-md-9">
+                    @Model.CustomerId
+                </dd>
+
+
+                <dt class="col-md-3">
+                    Customer Name
+                </dt>
+
+                <dd class="col-md-9">
+                    @Model.CustomerName
+                </dd>
+
+
+                <dt class="col-md-3">
+                    Mobile Number
+                </dt>
+
+                <dd class="col-md-9">
+                    @Model.MobileNumber
+                </dd>
+
+
+                <dt class="col-md-3">
+                    Address
+                </dt>
+
+                <dd class="col-md-9">
+                    @Model.Address
+                </dd>
+
+
+                <dt class="col-md-3">
+                    GSTIN
+                </dt>
+
+                <dd class="col-md-9">
+
+                    @if (!string.IsNullOrWhiteSpace(Model.GSTIN))
+                    {
+                        @Model.GSTIN
+                    }
+                    else
+                    {
+                        <span class="text-muted">
+                            Not Available
+                        </span>
+                    }
+
+                </dd>
+
+            </dl>
+
+
+            <!-- Delete Form -->
+            @using (Html.BeginForm(
+                "DeleteConfirmed",
+                "Customer",
+                new { id = Model.CustomerId },
+                FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+
+                <div class="mt-4">
+
+                    <button type="submit"
+                            class="btn btn-danger">
+                        Yes, Delete Customer
+                    </button>
+
+                    @Html.ActionLink(
+                        "Cancel",
+                        "Index",
+                        "Customer",
+                        null,
+                        new { @class = "btn btn-secondary ms-2" }
+                    )
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+</div>
