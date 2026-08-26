@@ -12,9 +12,9 @@ namespace Sales_Billing_System.Repositories
     {
         private readonly SalesBillingDbContext _context;
 
-        public ProductRepository(SalesBillingDbContext context)
+        public ProductRepository()
         {
-            _context = context;
+            _context = new SalesBillingDbContext();
         }
 
         // Get List of all products
