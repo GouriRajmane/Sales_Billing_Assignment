@@ -51,7 +51,7 @@ namespace Sales_Billing_System.Repositories
                 existingProduct.Unit = product.Unit;
                 existingProduct.SellingPrice = product.SellingPrice;
                 existingProduct.GSTPercentage = product.GSTPercentage;
-                existingProduct.IsActive = product.IsActive;
+                //existingProduct.IsActive = product.IsActive;
                 existingProduct.UpdatedAt = DateTime.Now;
 
                 _context.SaveChanges();
