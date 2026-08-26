@@ -131,8 +131,7 @@ namespace Sales_Billing_System.Controllers
         {
             try
             {
-                // Delete functionality will be added here
-                // after adding DeleteCustomer() to Repository and Service.
+                _customerService.DeleteCustomer(id);
 
                 TempData["SuccessMessage"] = "Customer deleted successfully.";
 
@@ -140,10 +139,13 @@ namespace Sales_Billing_System.Controllers
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Unable to delete customer. " + ex.Message;
+                TempData["ErrorMessage"] =
+                    "Unable to delete customer. " + ex.Message;
 
                 return RedirectToAction("Index");
             }
         }
+
+
     }
 }

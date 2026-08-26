@@ -13,6 +13,8 @@ namespace Sales_Billing_System.Repositories.Interfaces
 
         void UpdateCustomer(Customer_Master customer);
 
+        void DeleteCustomer(int customerId);
+
         List<Customer_Master> SearchCustomers(string searchText);
     }
 }

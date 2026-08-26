@@ -50,6 +50,20 @@ namespace Sales_Billing_System.Services
             _customerRepository.UpdateCustomer(customer);
         }
 
+        // Delete customer
+        public void DeleteCustomer(int customerId)
+        {
+            Customer_Master customer =
+                _customerRepository.GetCustomerById(customerId);
+
+            if (customer == null)
+            {
+                throw new Exception("Customer not found.");
+            }
+
+            _customerRepository.DeleteCustomer(customerId);
+        }
+
         // Search customers
         public List<Customer_Master> SearchCustomers(string searchText)
         {

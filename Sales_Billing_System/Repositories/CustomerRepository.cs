@@ -53,6 +53,18 @@ namespace Sales_Billing_System.Repositories
             }
         }
 
+        // Delete customer
+        public void DeleteCustomer(int customerId)
+        {
+            Customer_Master customer = GetCustomerById(customerId);
+
+            if (customer != null)
+            {
+                _context.Customers.Remove(customer);
+                _context.SaveChanges();
+            }
+        }
+
         // Search customers
         public List<Customer_Master> SearchCustomers(string searchText)
         {
