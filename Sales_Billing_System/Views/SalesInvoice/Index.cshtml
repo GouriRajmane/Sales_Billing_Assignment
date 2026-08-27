@@ -10,7 +10,6 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
 
         <div>
-
             <h2 class="mb-1">
                 Sales Invoice Management
             </h2>
@@ -18,9 +17,7 @@
             <p class="text-muted mb-0">
                 Manage, search and view all sales invoices.
             </p>
-
         </div>
-
 
         @Html.ActionLink(
             "+ Create Invoice",
@@ -93,8 +90,7 @@
                             new
                             {
                                 @class = "form-control",
-                                placeholder =
-                                    "Invoice number or customer name"
+                                placeholder = "Invoice number or customer name"
                             }
                         )
 
@@ -154,8 +150,7 @@
                             null,
                             new
                             {
-                                @class =
-                                    "btn btn-secondary w-100"
+                                @class = "btn btn-secondary w-100"
                             }
                         )
 
@@ -184,25 +179,15 @@
 
                             <th>#</th>
 
-                            <th>
-                                Invoice Number
-                            </th>
+                            <th>Invoice Number</th>
 
-                            <th>
-                                Date
-                            </th>
+                            <th>Date</th>
 
-                            <th>
-                                Customer
-                            </th>
+                            <th>Customer</th>
 
-                            <th>
-                                Grand Total
-                            </th>
+                            <th>Grand Total</th>
 
-                            <th>
-                                Status
-                            </th>
+                            <th>Status</th>
 
                             <th class="text-center">
                                 Actions
@@ -239,26 +224,23 @@
 
                                     <td>
 
-                                        @invoice.InvoiceDate
-                                        .ToString("dd-MM-yyyy")
+                                        @(invoice.InvoiceDate.ToString("dd-MM-yyyy"))
 
                                     </td>
 
 
                                     <td>
 
-                                        @if (invoice.Customer != null)
-                                        {
-                                            @invoice.Customer.CustomerName
-                                        }
+                                        @(invoice.Customer != null
+                                            ? invoice.Customer.CustomerName
+                                            : "")
 
                                     </td>
 
 
                                     <td>
 
-                                        ₹@invoice.GrandTotal
-                                        .ToString("N2")
+                                        ₹@(invoice.GrandTotal.ToString("N2"))
 
                                     </td>
 
@@ -268,17 +250,13 @@
                                         @if (invoice.Status == "Active")
                                         {
                                             <span class="badge bg-success">
-
                                                 Active
-
                                             </span>
                                         }
                                         else
                                         {
                                             <span class="badge bg-danger">
-
                                                 Cancelled
-
                                             </span>
                                         }
 
@@ -290,15 +268,10 @@
                                         @Html.ActionLink(
                                             "View",
                                             "Details",
+                                            new { id = invoice.InvoiceId },
                                             new
                                             {
-                                                id =
-                                                invoice.InvoiceId
-                                            },
-                                            new
-                                            {
-                                                @class =
-                                                "btn btn-sm btn-info me-1"
+                                                @class = "btn btn-sm btn-info me-1"
                                             }
                                         )
 
@@ -306,38 +279,22 @@
                                         @Html.ActionLink(
                                             "Print",
                                             "Print",
+                                            new { id = invoice.InvoiceId },
                                             new
                                             {
-                                                id =
-                                                invoice.InvoiceId
-                                            },
-                                            new
-                                            {
-                                                @class =
-                                                "btn btn-sm btn-secondary me-1"
+                                                @class = "btn btn-sm btn-secondary me-1"
                                             }
                                         )
 
 
-                                        @if (
-                                            invoice.Status !=
-                                            "Cancelled"
-                                        )
+                                        @if (invoice.Status != "Cancelled")
                                         {
                                             using (Html.BeginForm(
                                                 "Cancel",
                                                 "SalesInvoice",
-                                                new
-                                                {
-                                                    id =
-                                                    invoice.InvoiceId
-                                                },
+                                                new { id = invoice.InvoiceId },
                                                 FormMethod.Post,
-                                                new
-                                                {
-                                                    @class =
-                                                    "d-inline"
-                                                }
+                                                new { @class = "d-inline" }
                                             ))
                                             {
                                                 @Html.AntiForgeryToken()
@@ -367,15 +324,11 @@
                                     class="text-center py-4">
 
                                     <h5 class="text-muted">
-
                                         No Invoices Found
-
                                     </h5>
 
                                     <p class="text-muted mb-0">
-
                                         No sales invoices are available.
-
                                     </p>
 
                                 </td>

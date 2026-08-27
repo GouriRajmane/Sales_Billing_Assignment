@@ -2,70 +2,272 @@
 
 @{
     Layout = null;
-
     ViewBag.Title = "Print Invoice";
 }
 
 <!DOCTYPE html>
 
 <html>
-
 <head>
 
     <meta charset="utf-8" />
 
     <meta name="viewport"
-          content="width=device-width,
-                   initial-scale=1.0" />
+          content="width=device-width, initial-scale=1.0" />
 
     <title>
         Invoice - @Model.InvoiceNumber
     </title>
 
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-          rel="stylesheet" />
-
-
     <style>
 
-        body
-        {
-            background: white;
+        * {
+            box-sizing: border-box;
         }
 
 
-        .invoice-container
-        {
-            max-width: 900px;
-            margin: 30px auto;
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            font-family: "Courier New", Courier, monospace;
+            color: #333;
         }
 
 
-        .company-title
-        {
-            font-size: 28px;
+        /* Main Invoice Container */
+
+        .invoice-wrapper {
+            width: 100%;
+            padding: 30px 15px;
+        }
+
+
+        .invoice-container {
+            width: 650px;
+            max-width: 100%;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 35px 40px;
+        }
+
+
+        /* Company Section */
+
+        .company-section {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+
+        .company-name {
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+
+        .invoice-title {
+            font-size: 16px;
+            letter-spacing: 1px;
             font-weight: bold;
         }
 
 
-        @media print
-        {
-            .no-print
-            {
+        /* Invoice Details */
+
+        .invoice-info {
+            margin-bottom: 30px;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+
+
+        .label {
+            display: inline-block;
+            width: 120px;
+            font-weight: bold;
+        }
+
+
+        /* Customer Section */
+
+        .customer-section {
+            margin-bottom: 30px;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+
+
+        .customer-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+
+        /* Dashed Line */
+
+        .separator {
+            border: 0;
+            border-top: 1px dashed #333;
+            margin: 20px 0;
+        }
+
+
+        /* Invoice Items */
+
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+
+        .invoice-table th {
+            text-align: left;
+            padding: 8px 4px;
+            font-weight: bold;
+        }
+
+
+        .invoice-table td {
+            padding: 8px 4px;
+        }
+
+
+        .text-center {
+            text-align: center;
+        }
+
+
+        .text-right {
+            text-align: right;
+        }
+
+
+        /* Totals */
+
+        .totals-section {
+            width: 100%;
+            margin-top: 20px;
+            font-size: 15px;
+        }
+
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+        }
+
+
+        .total-label {
+            font-weight: bold;
+        }
+
+
+        .grand-total {
+            font-size: 17px;
+            font-weight: bold;
+            padding-top: 10px;
+        }
+
+
+        /* Print Controls */
+
+        .print-actions {
+            width: 650px;
+            max-width: 100%;
+            margin: 0 auto 20px auto;
+            text-align: right;
+        }
+
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+            border-radius: 4px;
+            margin-left: 5px;
+        }
+
+
+        .btn-print {
+            background-color: #0d6efd;
+            color: white;
+        }
+
+
+        .btn-back {
+            background-color: #6c757d;
+            color: white;
+        }
+
+
+        /* Print Settings */
+
+        @@media print {
+
+            body {
+                background-color: white;
+            }
+
+
+            .no-print {
                 display: none !important;
             }
 
-            body
-            {
+
+            .invoice-wrapper {
+                padding: 0;
+            }
+
+
+            .invoice-container {
+                width: 100%;
+                max-width: 100%;
+                padding: 30px;
                 margin: 0;
             }
 
-            .invoice-container
-            {
-                margin: 0;
-                max-width: 100%;
+
+            @@page {
+                size: A4;
+                margin: 20mm;
             }
+
+        }
+
+
+        /* Mobile */
+
+        @@media (max-width: 768px) {
+
+            .invoice-container {
+                padding: 25px 20px;
+            }
+
+
+            .company-name {
+                font-size: 19px;
+            }
+
+
+            .invoice-table {
+                font-size: 12px;
+            }
+
+
+            .invoice-table th,
+            .invoice-table td {
+                padding: 6px 2px;
+            }
+
         }
 
     </style>
@@ -75,361 +277,288 @@
 
 <body>
 
-    <div class="container invoice-container">
 
-        <!-- Print Button -->
-        <div class="text-end mb-4 no-print">
+    <!-- Buttons -->
 
-            <button onclick="window.print()"
-                    class="btn btn-primary">
+    <div class="print-actions no-print">
 
-                Print Invoice
+        <button type="button"
+                class="btn btn-print"
+                onclick="window.print()">
 
-            </button>
+            Print Invoice
 
-
-            @Html.ActionLink(
-                "Back",
-                "Details",
-                "SalesInvoice",
-                new { id = Model.InvoiceId },
-                new { @class = "btn btn-secondary ms-2" }
-            )
-
-        </div>
+        </button>
 
 
-        <!-- Company -->
-        <div class="row mb-4">
+        @Html.ActionLink(
+            "Back",
+            "Details",
+            "SalesInvoice",
+            new { id = Model.InvoiceId },
+            new
+            {
+                @class = "btn btn-back"
+            }
+        )
 
-            <div class="col-md-6">
+    </div>
 
-                <div class="company-title">
 
-                    SALES BILLING SYSTEM
+    <div class="invoice-wrapper">
 
+
+        <div class="invoice-container">
+
+
+            <!-- Company Name -->
+
+            <div class="company-section">
+
+                <div class="company-name">
+                    VILANIMART
                 </div>
 
-                <p class="text-muted">
 
-                    Sales Invoice
-
-                </p>
+                <div class="invoice-title">
+                    SALES INVOICE
+                </div>
 
             </div>
 
 
-            <div class="col-md-6 text-md-end">
+            <!-- Invoice Details -->
 
-                <h4>
+            <div class="invoice-info">
 
-                    INVOICE
+                <div>
 
-                </h4>
-
-                <p class="mb-1">
-
-                    <strong>
+                    <span class="label">
                         Invoice No:
-                    </strong>
+                    </span>
 
                     @Model.InvoiceNumber
 
-                </p>
+                </div>
 
-                <p>
 
-                    <strong>
+                <div>
+
+                    <span class="label">
                         Date:
-                    </strong>
+                    </span>
 
-                    @Model.InvoiceDate
-                    .ToString("dd-MM-yyyy")
+                    @(Model.InvoiceDate.ToString("dd-MMM-yyyy"))
 
-                </p>
+                </div>
 
             </div>
 
-        </div>
+
+            <!-- Customer Details -->
+
+            <div class="customer-section">
+
+                <div class="customer-label">
+                    Customer:
+                </div>
 
 
-        <hr />
-
-
-        <!-- Customer -->
-        <div class="row mb-4">
-
-            <div class="col-md-6">
-
-                <h6>
-
-                    Bill To
-
-                </h6>
-
-
-                <strong>
-
+                <div>
                     @(Model.Customer != null
                         ? Model.Customer.CustomerName
                         : "")
+                </div>
 
-                </strong>
 
-
-                <p class="mb-1">
-
+                <div>
                     @(Model.Customer != null
                         ? Model.Customer.Address
                         : "")
-
-                </p>
-
-
-                <p class="mb-1">
-
-                    @(Model.Customer != null
-                        ? Model.Customer.MobileNumber
-                        : "")
-
-                </p>
+                </div>
 
 
-                @if (
-                    Model.Customer != null &&
-                    !string.IsNullOrWhiteSpace(
-                        Model.Customer.GSTIN
-                    )
-                )
+                @if (Model.Customer != null &&
+                     !string.IsNullOrWhiteSpace(Model.Customer.MobileNumber))
                 {
-                    <p>
+                    <div>
+                        Mobile:
+                        @Model.Customer.MobileNumber
+                    </div>
+                }
 
+
+                @if (Model.Customer != null &&
+                     !string.IsNullOrWhiteSpace(Model.Customer.GSTIN))
+                {
+                    <div>
                         GSTIN:
                         @Model.Customer.GSTIN
-
-                    </p>
+                    </div>
                 }
 
             </div>
 
-        </div>
+
+            <!-- Separator -->
+
+            <hr class="separator" />
 
 
-        <!-- Items -->
-        <table class="table table-bordered">
+            <!-- Invoice Items -->
 
-            <thead class="table-light">
+            <table class="invoice-table">
 
-                <tr>
-
-                    <th>#</th>
-
-                    <th>
-                        Product
-                    </th>
-
-                    <th>
-                        Qty
-                    </th>
-
-                    <th>
-                        Rate
-                    </th>
-
-                    <th>
-                        GST %
-                    </th>
-
-                    <th>
-                        Taxable Amount
-                    </th>
-
-                    <th>
-                        GST Amount
-                    </th>
-
-                    <th>
-                        Total
-                    </th>
-
-                </tr>
-
-            </thead>
-
-
-            <tbody>
-
-                @{
-                    int count = 1;
-                }
-
-
-                @foreach (
-                    var item in Model.InvoiceItems
-                )
-                {
-                    <tr>
-
-                        <td>
-                            @count
-                        </td>
-
-
-                        <td>
-
-                            @(item.Product != null
-                                ? item.Product.ProductName
-                                : "")
-
-                        </td>
-
-
-                        <td>
-
-                            @item.Quantity
-                            .ToString("N2")
-
-                        </td>
-
-
-                        <td>
-
-                            ₹@item.Rate
-                            .ToString("N2")
-
-                        </td>
-
-
-                        <td>
-
-                            @item.GSTPercentage%
-
-                        </td>
-
-
-                        <td>
-
-                            ₹@item.TaxableAmount
-                            .ToString("N2")
-
-                        </td>
-
-
-                        <td>
-
-                            ₹@item.GSTAmount
-                            .ToString("N2")
-
-                        </td>
-
-
-                        <td>
-
-                            ₹@item.TotalAmount
-                            .ToString("N2")
-
-                        </td>
-
-                    </tr>
-
-                    count++;
-                }
-
-            </tbody>
-
-        </table>
-
-
-        <!-- Totals -->
-        <div class="row justify-content-end">
-
-            <div class="col-md-5">
-
-                <table class="table">
+                <thead>
 
                     <tr>
 
                         <th>
-                            Total Taxable Amount
+                            Product
                         </th>
 
-                        <td class="text-end">
 
-                            ₹@Model.TotalTaxableAmount
-                            .ToString("N2")
+                        <th class="text-center">
+                            Qty
+                        </th>
 
-                        </td>
+
+                        <th class="text-right">
+                            Rate
+                        </th>
+
+
+                        <th class="text-center">
+                            GST
+                        </th>
+
+
+                        <th class="text-right">
+                            Amount
+                        </th>
 
                     </tr>
 
-
-                    <tr>
-
-                        <th>
-                            Total GST Amount
-                        </th>
-
-                        <td class="text-end">
-
-                            ₹@Model.TotalGSTAmount
-                            .ToString("N2")
-
-                        </td>
-
-                    </tr>
+                </thead>
 
 
-                    <tr class="table-light">
+                <tbody>
 
-                        <th>
+                    @foreach (var item in Model.InvoiceItems)
+                    {
+                        <tr>
 
-                            <h5>
-                                Grand Total
-                            </h5>
+                            <!-- Product -->
 
-                        </th>
+                            <td>
+                                @(item.Product != null
+                                    ? item.Product.ProductName
+                                    : "")
+                            </td>
 
-                        <td class="text-end">
 
-                            <h5>
+                            <!-- Quantity -->
 
-                                ₹@Model.GrandTotal
-                                .ToString("N2")
+                            <td class="text-center">
+                                @(item.Quantity.ToString("N2"))
+                            </td>
 
-                            </h5>
 
-                        </td>
+                            <!-- Rate -->
 
-                    </tr>
+                            <td class="text-right">
+                                @(item.Rate.ToString("N2"))
+                            </td>
 
-                </table>
+
+                            <!-- GST -->
+
+                            <td class="text-center">
+                                @(item.GSTPercentage.ToString("N2"))%
+                            </td>
+
+
+                            <!-- Amount -->
+
+                            <td class="text-right">
+                                ₹@(item.TotalAmount.ToString("N2"))
+                            </td>
+
+                        </tr>
+                    }
+
+                </tbody>
+
+            </table>
+
+
+            <!-- Separator -->
+
+            <hr class="separator" />
+
+
+            <!-- Totals -->
+
+            <div class="totals-section">
+
+
+                <div class="total-row">
+
+                    <span class="total-label">
+                        Subtotal:
+                    </span>
+
+
+                    <span>
+                        ₹@(Model.TotalTaxableAmount.ToString("N2"))
+                    </span>
+
+                </div>
+
+
+                <div class="total-row">
+
+                    <span class="total-label">
+                        GST:
+                    </span>
+
+
+                    <span>
+                        ₹@(Model.TotalGSTAmount.ToString("N2"))
+                    </span>
+
+                </div>
+
+
+                <!-- Separator -->
+
+                <hr class="separator" />
+
+
+                <!-- Grand Total -->
+
+                <div class="total-row grand-total">
+
+                    <span>
+                        Grand Total:
+                    </span>
+
+
+                    <span>
+                        ₹@(Model.GrandTotal.ToString("N2"))
+                    </span>
+
+                </div>
+
 
             </div>
 
-        </div>
-
-
-        <hr />
-
-
-        <!-- Footer -->
-        <div class="text-center mt-4">
-
-            <p class="mb-1">
-
-                Thank you for your business!
-
-            </p>
-
-            <small class="text-muted">
-
-                This is a system generated invoice.
-
-            </small>
 
         </div>
+
 
     </div>
+
 
 </body>
 

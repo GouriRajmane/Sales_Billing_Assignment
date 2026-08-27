@@ -21,7 +21,7 @@ namespace Sales_Billing_System.Repositories
         public List<Product_Master> GetAllProducts()
         { 
             return _context.Products
-                            .OrderByDescending(p => p.ProductId)
+                            .OrderBy(p => p.ProductId)
                             .ToList();
         }
 
