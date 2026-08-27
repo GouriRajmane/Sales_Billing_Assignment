@@ -69,6 +69,10 @@ namespace Sales_Billing_System.Services
             _productRepository.ToggleStatus(productId);
         }
 
+        public List<Product_Master> GetActiveProducts()
+        {
+            return _productRepository.GetActiveProducts();
+        }
 
         // Search products
         public List<Product_Master> SearchProduct(string searchText)

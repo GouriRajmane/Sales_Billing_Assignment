@@ -10,114 +10,224 @@ namespace Sales_Billing_System.Services
 {
     public class SalesInvoiceService : ISalesInvoiceService
     {
-        private readonly ISalesInvoiceRepository _salesInvoiceRepository;
+        private readonly ISalesInvoiceRepository _invoiceRepository;
 
         public SalesInvoiceService()
         {
-            _salesInvoiceRepository = new SalesInvoiceRepository();
+            _invoiceRepository =
+                new SalesInvoiceRepository();
         }
 
-        // Get all invoices
         public List<Sales_Invoice> GetAllInvoices()
         {
-            return _salesInvoiceRepository.GetAllInvoices();
+            return _invoiceRepository.GetAllInvoices();
         }
 
-        // Get invoice by ID
+        public List<Sales_Invoice> SearchInvoices(
+            string searchText,
+            DateTime? fromDate,
+            DateTime? toDate)
+        {
+            return _invoiceRepository.SearchInvoices(
+                searchText,
+                fromDate,
+                toDate
+            );
+        }
+
         public Sales_Invoice GetInvoiceById(int invoiceId)
         {
-            return _salesInvoiceRepository.GetInvoiceById(invoiceId);
+            return _invoiceRepository.GetInvoiceById(invoiceId);
         }
 
-        // Create new invoice
-        public void CreateInvoice(Sales_Invoice invoice)
+        public string GenerateInvoiceNumber()
         {
-            if (invoice == null)
+            return _invoiceRepository.GenerateInvoiceNumber();
+        }
+
+        public void CreateInvoice(SalesInvoiceViewModel model)
+        {
+            if (model == null)
             {
-                throw new ArgumentNullException("invoice");
+                throw new ArgumentNullException("model");
             }
 
-            if (invoice.InvoiceItems == null ||
-                !invoice.InvoiceItems.Any())
+            if (model.CustomerId <= 0)
+            {
+                throw new Exception(
+                    "Please select a customer."
+                );
+            }
+
+            if (model.Items == null ||
+                !model.Items.Any())
             {
                 throw new Exception(
                     "Invoice must contain at least one item."
                 );
             }
 
-            // Set invoice date
-            invoice.InvoiceDate = DateTime.Now;
+            Sales_Invoice invoice =
+                new Sales_Invoice();
 
-            // Set invoice status
-            invoice.Status = "Active";
+            invoice.InvoiceNumber =
+                model.InvoiceNumber;
 
-            // Set created date
-            invoice.CreatedAt = DateTime.Now;
+            invoice.InvoiceDate =
+                model.InvoiceDate;
 
+            invoice.CustomerId =
+                model.CustomerId;
 
-            // Calculate Invoice Totals
-            decimal totalTaxableAmount = 0;
-            decimal totalGSTAmount = 0;
+            invoice.Status =
+                "Active";
 
+            invoice.CreatedAt =
+                DateTime.Now;
 
-            foreach (Sales_Invoice_Item item in invoice.InvoiceItems)
+            foreach (Sales_Invoice_Item item
+                in model.Items)
             {
-                // Calculate Taxable Amount
-                item.TaxableAmount =
-                    (item.Quantity * item.Rate) - item.Discount;
-
-                // Prevent negative taxable amount
-                if (item.TaxableAmount < 0)
+                if (item.ProductId <= 0)
                 {
-                    item.TaxableAmount = 0;
+                    throw new Exception(
+                        "Please select a product."
+                    );
                 }
 
-                // Calculate GST Amount
-                item.GSTAmount =
-                    item.TaxableAmount *
+                if (item.Quantity <= 0)
+                {
+                    throw new Exception(
+                        "Quantity must be greater than zero."
+                    );
+                }
+
+                if (item.Rate < 0)
+                {
+                    throw new Exception(
+                        "Rate cannot be negative."
+                    );
+                }
+
+                if (item.Discount < 0)
+                {
+                    throw new Exception(
+                        "Discount cannot be negative."
+                    );
+                }
+
+                if (item.GSTPercentage < 0 ||
+                    item.GSTPercentage > 100)
+                {
+                    throw new Exception(
+                        "GST percentage must be between 0 and 100."
+                    );
+                }
+
+                decimal lineAmount =
+                    item.Quantity * item.Rate;
+
+                decimal taxableAmount =
+                    lineAmount - item.Discount;
+
+                if (taxableAmount < 0)
+                {
+                    throw new Exception(
+                        "Discount cannot be greater than the line amount."
+                    );
+                }
+
+                decimal gstAmount =
+                    taxableAmount *
                     item.GSTPercentage / 100;
 
-                // Calculate Total Amount
-                item.TotalAmount =
-                    item.TaxableAmount +
-                    item.GSTAmount;
+                decimal totalAmount =
+                    taxableAmount +
+                    gstAmount;
 
+                Sales_Invoice_Item invoiceItem =
+                    new Sales_Invoice_Item();
 
-                // Add to Invoice Totals
-                totalTaxableAmount += item.TaxableAmount;
+                invoiceItem.ProductId =
+                    item.ProductId;
 
-                totalGSTAmount += item.GSTAmount;
+                invoiceItem.Quantity =
+                    item.Quantity;
+
+                invoiceItem.Rate =
+                    item.Rate;
+
+                invoiceItem.Discount =
+                    item.Discount;
+
+                invoiceItem.GSTPercentage =
+                    item.GSTPercentage;
+
+                invoiceItem.TaxableAmount =
+                    Math.Round(taxableAmount, 2);
+
+                invoiceItem.GSTAmount =
+                    Math.Round(gstAmount, 2);
+
+                invoiceItem.TotalAmount =
+                    Math.Round(totalAmount, 2);
+
+                invoice.InvoiceItems.Add(
+                    invoiceItem
+                );
             }
 
+            invoice.TotalTaxableAmount =
+                Math.Round(
+                    invoice.InvoiceItems.Sum(
+                        i => i.TaxableAmount
+                    ),
+                    2
+                );
 
-            // Set Invoice Totals
-            invoice.TotalTaxableAmount = totalTaxableAmount;
-
-            invoice.TotalGSTAmount = totalGSTAmount;
+            invoice.TotalGSTAmount =
+                Math.Round(
+                    invoice.InvoiceItems.Sum(
+                        i => i.GSTAmount
+                    ),
+                    2
+                );
 
             invoice.GrandTotal =
-                invoice.TotalTaxableAmount +
-                invoice.TotalGSTAmount;
+                Math.Round(
+                    invoice.TotalTaxableAmount +
+                    invoice.TotalGSTAmount,
+                    2
+                );
 
-
-            // Generate Invoice Number
-            if (string.IsNullOrWhiteSpace(invoice.InvoiceNumber))
-            {
-                invoice.InvoiceNumber =
-                    GenerateInvoiceNumber();
-            }
-
-
-            // Save Invoice
-            _salesInvoiceRepository.CreateInvoice(invoice);
+            _invoiceRepository.CreateInvoice(
+                invoice
+            );
         }
 
-
-        // Generate Invoice Number
-        private string GenerateInvoiceNumber()
+        public void CancelInvoice(int invoiceId)
         {
-            return "INV-" +
-                   DateTime.Now.ToString("yyyyMMddHHmmss");
+            Sales_Invoice invoice =
+                _invoiceRepository
+                    .GetInvoiceById(invoiceId);
+
+            if (invoice == null)
+            {
+                throw new Exception(
+                    "Invoice not found."
+                );
+            }
+
+            if (invoice.Status == "Cancelled")
+            {
+                throw new Exception(
+                    "Invoice is already cancelled."
+                );
+            }
+
+            _invoiceRepository.CancelInvoice(
+                invoiceId
+            );
         }
     }
 }

@@ -18,6 +18,8 @@ namespace Sales_Billing_System.Services.Interfaces
 
         void ToggleStatus(int productId);
 
+        List<Product_Master> GetActiveProducts();
+
         List<Product_Master> SearchProduct(string searchText);
     }
 }
