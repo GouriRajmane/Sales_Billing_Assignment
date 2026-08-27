@@ -41,6 +41,54 @@ namespace Sales_Billing_System.Data
                 .HasForeignKey(i => i.ProductId)
                 .WillCascadeOnDelete(false);
 
+
+            // Decimal Precision
+            modelBuilder.Entity<Product_Master>()
+                .Property(p => p.SellingPrice)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Sales_Invoice>()
+                .Property(i => i.TotalTaxableAmount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Sales_Invoice>()
+                .Property(i => i.TotalGSTAmount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Sales_Invoice>()
+                .Property(i => i.GrandTotal)
+                .HasPrecision(18, 2);
+
+
+            modelBuilder.Entity<Sales_Invoice_Item>()
+                .Property(i => i.Quantity)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Sales_Invoice_Item>()
+                .Property(i => i.Rate)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Sales_Invoice_Item>()
+                .Property(i => i.Discount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Sales_Invoice_Item>()
+                .Property(i => i.GSTPercentage)
+                .HasPrecision(5, 2);
+
+            modelBuilder.Entity<Sales_Invoice_Item>()
+                .Property(i => i.TaxableAmount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Sales_Invoice_Item>()
+                .Property(i => i.GSTAmount)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Sales_Invoice_Item>()
+                .Property(i => i.TotalAmount)
+                .HasPrecision(18, 2);
+
+
             base.OnModelCreating(modelBuilder);
         }
     }
