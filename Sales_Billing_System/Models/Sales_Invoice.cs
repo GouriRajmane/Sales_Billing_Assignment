@@ -14,7 +14,7 @@ namespace Sales_Billing_System.Models
         public string InvoiceNumber { get; set; }
 
         [Required]
-        public DateTime InvoiceDate { get; set; } = DateTime.Now;
+        public DateTime InvoiceDate { get; set; }
 
         [Required]
         public int CustomerId { get; set; }
@@ -27,15 +27,22 @@ namespace Sales_Billing_System.Models
 
         [Required]
         [StringLength(20)]
-        public string Status { get; set; } = "Active";
+        public string Status { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; }
 
         // Navigation Property
         public virtual Customer_Master Customer { get; set; }
 
         // One Invoice -> Many Invoice Items
         public virtual ICollection<Sales_Invoice_Item> InvoiceItems { get; set; }
-            = new List<Sales_Invoice_Item>();
+
+        public Sales_Invoice()
+        {
+            InvoiceDate = DateTime.Now;
+            Status = "Active";
+            CreatedAt = DateTime.Now;
+            InvoiceItems = new List<Sales_Invoice_Item>();
+        }
     }
 }

@@ -8,23 +8,27 @@ namespace Sales_Billing_System.Models
         [Key]
         public int CustomerId { get; set; }
 
-        [Required(ErrorMessage = "Customer Name is required.")]
+        [Required]
         [StringLength(100)]
         public string CustomerName { get; set; }
 
-        [Required(ErrorMessage = "Mobile Number is required.")]
+        [Required]
         [StringLength(15)]
-        [RegularExpression(@"^[0-9]+$", ErrorMessage = "Mobile Number should contain only numbers.")]
         public string MobileNumber { get; set; }
 
-        [Required(ErrorMessage = "Address is required.")]
+        [Required]
         [StringLength(200)]
         public string Address { get; set; }
 
         [StringLength(15)]
         public string GSTIN { get; set; }
 
+        // One Customer -> Many Sales Invoices
         public virtual ICollection<Sales_Invoice> SalesInvoices { get; set; }
-            = new List<Sales_Invoice>();
+
+        public Customer_Master()
+        {
+            SalesInvoices = new List<Sales_Invoice>();
+        }
     }
 }
