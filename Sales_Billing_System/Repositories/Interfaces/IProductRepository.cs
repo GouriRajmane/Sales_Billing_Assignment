@@ -20,6 +20,8 @@ namespace Sales_Billing_System.Repositories.Interfaces
         // Activate or Deactivate product
         void ToggleStatus(int productId);
 
+        List<Product_Master> GetActiveProducts();
+
         // Search products
         List<Product_Master> SearchProduct(string searchText);
     }

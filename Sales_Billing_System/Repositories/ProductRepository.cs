@@ -71,6 +71,14 @@ namespace Sales_Billing_System.Repositories
             }
         }
 
+        public List<Product_Master> GetActiveProducts()
+        {
+            return _context.Products
+                           .Where(p => p.IsActive)
+                           .OrderBy(p => p.ProductName)
+                           .ToList();
+        }
+
         // Search products
         public List<Product_Master> SearchProduct(string searchText)
         {
