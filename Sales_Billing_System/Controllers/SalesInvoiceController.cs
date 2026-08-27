@@ -2,37 +2,120 @@
 using Sales_Billing_System.Services;
 using Sales_Billing_System.Services.Interfaces;
 using System;
-using System.Linq;
 using System.Web.Mvc;
 
 namespace Sales_Billing_System.Controllers
 {
     public class SalesInvoiceController : Controller
     {
-        private readonly ISalesInvoiceService _salesInvoiceService;
-        private readonly ICustomerService _customerService;
-        private readonly IProductService _productService;
+        private readonly ISalesInvoiceService
+            _invoiceService;
+
+        private readonly ICustomerService
+            _customerService;
+
+        private readonly IProductService
+            _productService;
 
         public SalesInvoiceController()
         {
-            _salesInvoiceService = new SalesInvoiceService();
-            _customerService = new CustomerService();
-            _productService = new ProductService();
+            _invoiceService =
+                new SalesInvoiceService();
+
+            _customerService =
+                new CustomerService();
+
+            _productService =
+                new ProductService();
         }
 
         // GET: SalesInvoice
-        public ActionResult Index()
+        public ActionResult Index(
+            string searchText,
+            DateTime? fromDate,
+            DateTime? toDate)
         {
-            var invoices = _salesInvoiceService.GetAllInvoices();
+            ViewBag.SearchText =
+                searchText;
+
+            ViewBag.FromDate =
+                fromDate;
+
+            ViewBag.ToDate =
+                toDate;
+
+            var invoices =
+                _invoiceService.SearchInvoices(
+                    searchText,
+                    fromDate,
+                    toDate
+                );
 
             return View(invoices);
+        }
+
+        // GET: SalesInvoice/Create
+        [HttpGet]
+        public ActionResult Create()
+        {
+            LoadDropdownData();
+
+            SalesInvoiceViewModel model =
+                new SalesInvoiceViewModel();
+
+            model.InvoiceNumber =
+                _invoiceService
+                    .GenerateInvoiceNumber();
+
+            model.Items.Add(
+                new Sales_Invoice_Item()
+            );
+
+            return View(model);
+        }
+
+        // POST: SalesInvoice/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Create(
+            SalesInvoiceViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                LoadDropdownData();
+
+                return View(model);
+            }
+
+            try
+            {
+                _invoiceService
+                    .CreateInvoice(model);
+
+                TempData["SuccessMessage"] =
+                    "Invoice created successfully.";
+
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                LoadDropdownData();
+
+                ModelState.AddModelError(
+                    "",
+                    ex.Message
+                );
+
+                return View(model);
+            }
         }
 
         // GET: SalesInvoice/Details/5
         public ActionResult Details(int id)
         {
             Sales_Invoice invoice =
-                _salesInvoiceService.GetInvoiceById(id);
+                _invoiceService
+                    .GetInvoiceById(id);
 
             if (invoice == null)
             {
@@ -42,81 +125,59 @@ namespace Sales_Billing_System.Controllers
             return View(invoice);
         }
 
-        // GET: SalesInvoice/Create
-        public ActionResult Create()
+        // GET: SalesInvoice/Print/5
+        public ActionResult Print(int id)
         {
-            LoadDropdowns();
+            Sales_Invoice invoice =
+                _invoiceService
+                    .GetInvoiceById(id);
 
-            Sales_Invoice invoice = new Sales_Invoice();
-
-            invoice.InvoiceNumber = GenerateInvoiceNumber();
-
-            invoice.InvoiceDate = DateTime.Now;
-
-            return View(invoice);
-        }
-
-        // POST: SalesInvoice/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Create(Sales_Invoice invoice)
-        {
-            if (ModelState.IsValid)
+            if (invoice == null)
             {
-                try
-                {
-                    _salesInvoiceService.CreateInvoice(invoice);
-
-                    TempData["SuccessMessage"] =
-                        "Sales invoice created successfully.";
-
-                    return RedirectToAction("Index");
-                }
-                catch (Exception ex)
-                {
-                    ModelState.AddModelError(
-                        "",
-                        "Unable to create invoice. " + ex.Message
-                    );
-                }
+                return HttpNotFound();
             }
 
-            LoadDropdowns();
-
             return View(invoice);
         }
 
-        // Load Customer and Product Dropdowns
-        private void LoadDropdowns()
+        // POST: SalesInvoice/Cancel/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult Cancel(int id)
         {
-            var customers = _customerService
-                .GetAllCustomers()
-                .Select(c => new SelectListItem
-                {
-                    Value = c.CustomerId.ToString(),
-                    Text = c.CustomerName
-                })
-                .ToList();
+            try
+            {
+                _invoiceService.CancelInvoice(id);
 
-            var products = _productService
-                .GetAllProducts()
-                .Where(p => p.IsActive)
-                .Select(p => new SelectListItem
-                {
-                    Value = p.ProductId.ToString(),
-                    Text = p.ProductName + " (" + p.SKU + ")"
-                })
-                .ToList();
+                TempData["SuccessMessage"] =
+                    "Invoice cancelled successfully.";
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] =
+                    ex.Message;
+            }
 
-            ViewBag.Customers = customers;
-            ViewBag.Products = products;
+            return RedirectToAction("Index");
         }
 
-        // Generate Invoice Number for Display
-        private string GenerateInvoiceNumber()
+        private void LoadDropdownData()
         {
-            return "INV-" +
-                   DateTime.Now.ToString("yyyyMMddHHmmss");
+            ViewBag.Customers =
+                new SelectList(
+                    _customerService
+                        .GetAllCustomers(),
+                    "CustomerId",
+                    "CustomerName"
+                );
+
+            ViewBag.Products =
+                new SelectList(
+                    _productService
+                        .GetActiveProducts(),
+                    "ProductId",
+                    "ProductName"
+                );
         }
     }
 }

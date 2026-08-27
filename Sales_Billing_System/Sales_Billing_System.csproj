@@ -139,19 +139,22 @@
     <Compile Include="Migrations\202608260709238_InitialCreate.Designer.cs">
       <DependentUpon>202608260709238_InitialCreate.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\202608270720255_AddSalesInvoiceTables.cs" />
+    <Compile Include="Migrations\202608270720255_AddSalesInvoiceTables.Designer.cs">
+      <DependentUpon>202608270720255_AddSalesInvoiceTables.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\Customer_Master.cs" />
     <Compile Include="Models\Product_Master.cs" />
+    <Compile Include="Models\SalesInvoiceViewModel.cs" />
     <Compile Include="Models\Sales_Invoice.cs" />
     <Compile Include="Models\Sales_Invoice_Item.cs" />
-    <Compile Include="Models\ViewModel\SalesInvoiceItemViewModel.cs" />
-    <Compile Include="Models\ViewModel\SalesInvoiceViewModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Repositories\CustomerRepository.cs" />
     <Compile Include="Repositories\Interfaces\ICustomerRepository.cs" />
     <Compile Include="Repositories\Interfaces\IProductRepository.cs" />
     <Compile Include="Repositories\Interfaces\ISalesInvoiceRepository.cs" />
-    <Compile Include="Repositories\Interfaces\SalesInvoiceRepository.cs" />
+    <Compile Include="Repositories\SalesInvoiceRepository.cs" />
     <Compile Include="Repositories\ProductRepository.cs" />
     <Compile Include="Services\CustomerService.cs" />
     <Compile Include="Services\Interfaces\ICustomerService.cs" />
@@ -253,6 +256,9 @@
   <ItemGroup>
     <EmbeddedResource Include="Migrations\202608260709238_InitialCreate.resx">
       <DependentUpon>202608260709238_InitialCreate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202608270720255_AddSalesInvoiceTables.resx">
+      <DependentUpon>202608270720255_AddSalesInvoiceTables.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>
