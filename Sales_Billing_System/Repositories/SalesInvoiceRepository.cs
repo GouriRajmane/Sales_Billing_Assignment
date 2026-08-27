@@ -22,7 +22,7 @@ namespace Sales_Billing_System.Repositories
             return _context.SalesInvoices
                 .Include(i => i.Customer)
                 .OrderByDescending(i => i.InvoiceDate)
-                .ThenByDescending(i => i.InvoiceId)
+                //.ThenByDescending(i => i.InvoiceId)
                 .ToList();
         }
 

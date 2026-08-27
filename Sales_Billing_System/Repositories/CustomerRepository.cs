@@ -19,7 +19,7 @@ namespace Sales_Billing_System.Repositories
         public List<Customer_Master> GetAllCustomers()
         {
             return _context.Customers
-                           .OrderByDescending(c => c.CustomerId)
+                           .OrderBy(c => c.CustomerId)
                            .ToList();
         }
 
