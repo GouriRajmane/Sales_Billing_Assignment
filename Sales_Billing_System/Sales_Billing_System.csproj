@@ -222,6 +222,9 @@
     <Content Include="Views\Customer\Edit.cshtml" />
     <Content Include="Views\Customer\Details.cshtml" />
     <Content Include="Views\SalesInvoice\Create.cshtml" />
+    <Content Include="Views\SalesInvoice\Index.cshtml" />
+    <Content Include="Views\SalesInvoice\Details.cshtml" />
+    <Content Include="Views\SalesInvoice\Print.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

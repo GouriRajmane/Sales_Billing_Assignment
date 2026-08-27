@@ -1,0 +1,427 @@
+﻿@model Sales_Billing_System.Models.Sales_Invoice
+
+@{
+    ViewBag.Title = "Invoice Details";
+}
+
+<div class="container mt-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h2 class="mb-1">
+                Invoice Details
+            </h2>
+
+            <p class="text-muted mb-0">
+
+                View complete invoice information.
+
+            </p>
+
+        </div>
+
+
+        <div>
+
+            @Html.ActionLink(
+                "Print Invoice",
+                "Print",
+                "SalesInvoice",
+                new { id = Model.InvoiceId },
+                new { @class = "btn btn-secondary me-2" }
+            )
+
+
+            @Html.ActionLink(
+                "Back",
+                "Index",
+                "SalesInvoice",
+                null,
+                new { @class = "btn btn-primary" }
+            )
+
+        </div>
+
+    </div>
+
+
+    <!-- Status -->
+    @if (Model.Status == "Cancelled")
+    {
+        <div class="alert alert-danger">
+
+            <strong>
+                This invoice has been cancelled.
+            </strong>
+
+        </div>
+    }
+
+
+    <!-- Invoice Information -->
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header bg-dark text-white">
+
+            <h5 class="mb-0">
+
+                Invoice Information
+
+            </h5>
+
+        </div>
+
+
+        <div class="card-body">
+
+            <div class="row">
+
+                <!-- Invoice Number -->
+                <div class="col-md-4 mb-3">
+
+                    <label class="form-label fw-bold">
+
+                        Invoice Number
+
+                    </label>
+
+                    <div class="form-control bg-light">
+
+                        @Model.InvoiceNumber
+
+                    </div>
+
+                </div>
+
+
+                <!-- Date -->
+                <div class="col-md-4 mb-3">
+
+                    <label class="form-label fw-bold">
+
+                        Invoice Date
+
+                    </label>
+
+                    <div class="form-control bg-light">
+
+                        @Model.InvoiceDate
+                        .ToString("dd-MM-yyyy")
+
+                    </div>
+
+                </div>
+
+
+                <!-- Status -->
+                <div class="col-md-4 mb-3">
+
+                    <label class="form-label fw-bold">
+
+                        Status
+
+                    </label>
+
+                    <div class="form-control bg-light">
+
+                        @Model.Status
+
+                    </div>
+
+                </div>
+
+
+                <!-- Customer -->
+                <div class="col-md-6">
+
+                    <label class="form-label fw-bold">
+
+                        Customer
+
+                    </label>
+
+                    <div class="form-control bg-light">
+
+                        @(Model.Customer != null
+                            ? Model.Customer.CustomerName
+                            : "")
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Invoice Items -->
+    <div class="card shadow-sm mb-4">
+
+        <div class="card-header bg-dark text-white">
+
+            <h5 class="mb-0">
+
+                Invoice Items
+
+            </h5>
+
+        </div>
+
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered align-middle">
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th>#</th>
+
+                            <th>
+                                Product
+                            </th>
+
+                            <th>
+                                Quantity
+                            </th>
+
+                            <th>
+                                Rate
+                            </th>
+
+                            <th>
+                                GST %
+                            </th>
+
+                            <th>
+                                Taxable Amount
+                            </th>
+
+                            <th>
+                                GST Amount
+                            </th>
+
+                            <th>
+                                Total Amount
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        @{
+                            int count = 1;
+                        }
+
+
+                        @foreach (
+                            var item in Model.InvoiceItems
+                        )
+                        {
+                            <tr>
+
+                                <td>
+                                    @count
+                                </td>
+
+
+                                <td>
+
+                                    @(item.Product != null
+                                        ? item.Product.ProductName
+                                        : "")
+
+                                </td>
+
+
+                                <td>
+
+                                    @item.Quantity
+                                    .ToString("N2")
+
+                                </td>
+
+
+                                <td>
+
+                                    ₹@item.Rate
+                                    .ToString("N2")
+
+                                </td>
+
+
+                                <td>
+
+                                    @item.GSTPercentage
+                                    %
+
+                                </td>
+
+
+                                <td>
+
+                                    ₹@item.TaxableAmount
+                                    .ToString("N2")
+
+                                </td>
+
+
+                                <td>
+
+                                    ₹@item.GSTAmount
+                                    .ToString("N2")
+
+                                </td>
+
+
+                                <td>
+
+                                    <strong>
+
+                                        ₹@item.TotalAmount
+                                        .ToString("N2")
+
+                                    </strong>
+
+                                </td>
+
+                            </tr>
+
+                            count++;
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Totals -->
+    <div class="row justify-content-end">
+
+        <div class="col-md-5">
+
+            <div class="card shadow-sm">
+
+                <div class="card-header bg-light">
+
+                    <h5 class="mb-0">
+
+                        Invoice Summary
+
+                    </h5>
+
+                </div>
+
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between mb-3">
+
+                        <span>
+
+                            Total Taxable Amount
+
+                        </span>
+
+                        <strong>
+
+                            ₹@Model.TotalTaxableAmount
+                            .ToString("N2")
+
+                        </strong>
+
+                    </div>
+
+
+                    <div class="d-flex justify-content-between mb-3">
+
+                        <span>
+
+                            Total GST Amount
+
+                        </span>
+
+                        <strong>
+
+                            ₹@Model.TotalGSTAmount
+                            .ToString("N2")
+
+                        </strong>
+
+                    </div>
+
+
+                    <hr />
+
+
+                    <div class="d-flex justify-content-between">
+
+                        <h5>
+
+                            Grand Total
+
+                        </h5>
+
+                        <h5>
+
+                            ₹@Model.GrandTotal
+                            .ToString("N2")
+
+                        </h5>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Cancel Invoice -->
+    @if (Model.Status != "Cancelled")
+    {
+        <div class="mt-4 mb-4">
+
+            @using (Html.BeginForm(
+                "Cancel",
+                "SalesInvoice",
+                new { id = Model.InvoiceId },
+                FormMethod.Post
+            ))
+            {
+                @Html.AntiForgeryToken()
+
+                <button type="submit"
+                        class="btn btn-danger"
+                        onclick="return confirm('Are you sure you want to cancel this invoice?');">
+
+                    Cancel Invoice
+
+                </button>
+            }
+
+        </div>
+    }
+
+</div>
