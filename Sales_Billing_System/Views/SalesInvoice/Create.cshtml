@@ -1,0 +1,621 @@
+﻿@model Sales_Billing_System.Models.Sales_Invoice
+
+@{
+    ViewBag.Title = "Create Sales Invoice";
+}
+
+<div class="container mt-4">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Create Sales Invoice</h2>
+            <p class="text-muted mb-0">
+                Create an invoice and add multiple products.
+            </p>
+        </div>
+
+        @Html.ActionLink(
+            "Back to Invoices",
+            "Index",
+            "SalesInvoice",
+            null,
+            new { @class = "btn btn-secondary" }
+        )
+    </div>
+
+
+    @using (Html.BeginForm("Create", "SalesInvoice", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+
+        @Html.ValidationSummary(
+            true,
+            "",
+            new { @class = "text-danger mb-3" }
+        )
+
+
+        <!-- Invoice Header -->
+        <div class="card shadow-sm mb-4">
+
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">Invoice Header</h5>
+            </div>
+
+            <div class="card-body">
+
+                <div class="row">
+
+                    <!-- Invoice Number -->
+                    <div class="col-md-4 mb-3">
+
+                        <label class="form-label fw-bold">
+                            Invoice Number
+                        </label>
+
+                        @Html.TextBoxFor(
+                            model => model.InvoiceNumber,
+                            new
+                            {
+                                @class = "form-control",
+                                @readonly = "readonly"
+                            }
+                        )
+
+                    </div>
+
+
+                    <!-- Invoice Date -->
+                    <div class="col-md-4 mb-3">
+
+                        <label class="form-label fw-bold">
+                            Invoice Date
+                        </label>
+
+                        @Html.TextBoxFor(
+                            model => model.InvoiceDate,
+                            "{0:yyyy-MM-dd}",
+                            new
+                            {
+                                @class = "form-control",
+                                type = "date"
+                            }
+                        )
+
+                    </div>
+
+
+                    <!-- Customer -->
+                    <div class="col-md-4 mb-3">
+
+                        <label class="form-label fw-bold">
+                            Customer
+                        </label>
+
+                        @Html.DropDownListFor(
+                            model => model.CustomerId,
+                            ViewBag.Customers as IEnumerable<SelectListItem>,
+                            "-- Select Customer --",
+                            new { @class = "form-select" }
+                        )
+
+                        @Html.ValidationMessageFor(
+                            model => model.CustomerId,
+                            "",
+                            new { @class = "text-danger" }
+                        )
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Invoice Items -->
+        <div class="card shadow-sm mb-4">
+
+            <div class="card-header d-flex justify-content-between align-items-center">
+
+                <h5 class="mb-0">
+                    Invoice Items
+                </h5>
+
+                <button type="button"
+                        id="addItemBtn"
+                        class="btn btn-success btn-sm">
+                    + Add Item
+                </button>
+
+            </div>
+
+
+            <div class="card-body">
+
+                <div class="table-responsive">
+
+                    <table class="table table-bordered align-middle"
+                           id="invoiceItemsTable">
+
+                        <thead class="table-dark">
+
+                            <tr>
+                                <th style="min-width: 220px;">
+                                    Product
+                                </th>
+
+                                <th style="min-width: 100px;">
+                                    Quantity
+                                </th>
+
+                                <th style="min-width: 120px;">
+                                    Rate
+                                </th>
+
+                                <th style="min-width: 120px;">
+                                    Discount
+                                </th>
+
+                                <th style="min-width: 100px;">
+                                    GST %
+                                </th>
+
+                                <th style="min-width: 130px;">
+                                    Taxable Amount
+                                </th>
+
+                                <th style="min-width: 120px;">
+                                    GST Amount
+                                </th>
+
+                                <th style="min-width: 130px;">
+                                    Total
+                                </th>
+
+                                <th>
+                                    Action
+                                </th>
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody id="invoiceItemsBody">
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+
+                <!-- No Items Message -->
+                <div id="noItemsMessage"
+                     class="text-center text-muted py-3">
+
+                    No products added. Click
+                    <strong>Add Item</strong>
+                    to add a product.
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Invoice Totals -->
+        <div class="row justify-content-end mb-4">
+
+            <div class="col-md-5">
+
+                <div class="card shadow-sm">
+
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0">
+                            Invoice Summary
+                        </h5>
+                    </div>
+
+                    <div class="card-body">
+
+                        <div class="d-flex justify-content-between mb-3">
+
+                            <span>
+                                Total Taxable Amount
+                            </span>
+
+                            <strong>
+                                ₹
+                                <span id="totalTaxableAmount">
+                                    0.00
+                                </span>
+                            </strong>
+
+                        </div>
+
+
+                        <div class="d-flex justify-content-between mb-3">
+
+                            <span>
+                                Total GST Amount
+                            </span>
+
+                            <strong>
+                                ₹
+                                <span id="totalGSTAmount">
+                                    0.00
+                                </span>
+                            </strong>
+
+                        </div>
+
+
+                        <hr />
+
+
+                        <div class="d-flex justify-content-between">
+
+                            <h5>
+                                Grand Total
+                            </h5>
+
+                            <h5>
+                                ₹
+                                <span id="grandTotal">
+                                    0.00
+                                </span>
+                            </h5>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Submit Button -->
+        <div class="d-flex justify-content-end gap-2">
+
+            @Html.ActionLink(
+                "Cancel",
+                "Index",
+                "SalesInvoice",
+                null,
+                new { @class = "btn btn-secondary" }
+            )
+
+            <button type="submit"
+                    class="btn btn-primary">
+                Save Invoice
+            </button>
+
+        </div>
+    }
+
+</div>
+
+
+<!-- Hidden Product Options -->
+<select id="productOptionsTemplate" style="display: none;">
+    <option value="">-- Select Product --</option>
+
+    @foreach (var product in
+        ViewBag.Products as IEnumerable<SelectListItem>)
+    {
+        <option value="@product.Value">
+            @product.Text
+        </option>
+    }
+</select>
+
+
+@section Scripts
+{
+    @Scripts.Render("~/bundles/jqueryval")
+
+    <script>
+
+        let itemIndex = 0;
+
+
+        // Add Invoice Item
+        $("#addItemBtn").click(function () {
+
+            let productOptions =
+                $("#productOptionsTemplate").html();
+
+            let row = `
+                <tr>
+
+                    <td>
+                        <select
+                            name="InvoiceItems[${itemIndex}].ProductId"
+                            class="form-select product-select">
+
+                            ${productOptions}
+
+                        </select>
+                    </td>
+
+
+                    <td>
+
+                        <input
+                            type="number"
+                            name="InvoiceItems[${itemIndex}].Quantity"
+                            class="form-control quantity"
+                            value="1"
+                            min="0.01"
+                            step="0.01" />
+
+                    </td>
+
+
+                    <td>
+
+                        <input
+                            type="number"
+                            name="InvoiceItems[${itemIndex}].Rate"
+                            class="form-control rate"
+                            value="0"
+                            min="0"
+                            step="0.01" />
+
+                    </td>
+
+
+                    <td>
+
+                        <input
+                            type="number"
+                            name="InvoiceItems[${itemIndex}].Discount"
+                            class="form-control discount"
+                            value="0"
+                            min="0"
+                            step="0.01" />
+
+                    </td>
+
+
+                    <td>
+
+                        <input
+                            type="number"
+                            name="InvoiceItems[${itemIndex}].GSTPercentage"
+                            class="form-control gst"
+                            value="0"
+                            min="0"
+                            max="100"
+                            step="0.01" />
+
+                    </td>
+
+
+                    <td>
+
+                        <input
+                            type="text"
+                            class="form-control taxableAmount"
+                            value="0.00"
+                            readonly />
+
+                    </td>
+
+
+                    <td>
+
+                        <input
+                            type="text"
+                            class="form-control gstAmount"
+                            value="0.00"
+                            readonly />
+
+                    </td>
+
+
+                    <td>
+
+                        <input
+                            type="text"
+                            class="form-control totalAmount"
+                            value="0.00"
+                            readonly />
+
+                    </td>
+
+
+                    <td class="text-center">
+
+                        <button
+                            type="button"
+                            class="btn btn-danger btn-sm remove-item">
+
+                            Remove
+
+                        </button>
+
+                    </td>
+
+                </tr>
+            `;
+
+            $("#invoiceItemsBody").append(row);
+
+            $("#noItemsMessage").hide();
+
+            itemIndex++;
+        });
+
+
+
+        // Remove Invoice Item
+        $(document).on(
+            "click",
+            ".remove-item",
+            function () {
+
+                $(this)
+                    .closest("tr")
+                    .remove();
+
+                calculateInvoiceTotals();
+
+
+                if (
+                    $("#invoiceItemsBody tr").length === 0
+                ) {
+                    $("#noItemsMessage").show();
+                }
+            }
+        );
+
+
+
+        // Calculate Item
+        $(document).on(
+            "input",
+            ".quantity, .rate, .discount, .gst",
+            function () {
+
+                let row =
+                    $(this).closest("tr");
+
+                calculateRow(row);
+
+                calculateInvoiceTotals();
+            }
+        );
+
+
+
+        function calculateRow(row) {
+
+            let quantity =
+                parseFloat(
+                    row.find(".quantity").val()
+                ) || 0;
+
+            let rate =
+                parseFloat(
+                    row.find(".rate").val()
+                ) || 0;
+
+            let discount =
+                parseFloat(
+                    row.find(".discount").val()
+                ) || 0;
+
+            let gstPercentage =
+                parseFloat(
+                    row.find(".gst").val()
+                ) || 0;
+
+
+            let taxableAmount =
+                (quantity * rate) - discount;
+
+
+            if (taxableAmount < 0) {
+                taxableAmount = 0;
+            }
+
+
+            let gstAmount =
+                taxableAmount *
+                gstPercentage / 100;
+
+
+            let totalAmount =
+                taxableAmount +
+                gstAmount;
+
+
+            row.find(".taxableAmount")
+                .val(taxableAmount.toFixed(2));
+
+            row.find(".gstAmount")
+                .val(gstAmount.toFixed(2));
+
+            row.find(".totalAmount")
+                .val(totalAmount.toFixed(2));
+        }
+
+
+
+        function calculateInvoiceTotals() {
+
+            let totalTaxable = 0;
+
+            let totalGST = 0;
+
+
+            $("#invoiceItemsBody tr")
+                .each(function () {
+
+                    totalTaxable +=
+                        parseFloat(
+                            $(this)
+                                .find(".taxableAmount")
+                                .val()
+                        ) || 0;
+
+
+                    totalGST +=
+                        parseFloat(
+                            $(this)
+                                .find(".gstAmount")
+                                .val()
+                        ) || 0;
+                });
+
+
+            let grandTotal =
+                totalTaxable +
+                totalGST;
+
+
+            $("#totalTaxableAmount")
+                .text(
+                    totalTaxable.toFixed(2)
+                );
+
+
+            $("#totalGSTAmount")
+                .text(
+                    totalGST.toFixed(2)
+                );
+
+
+            $("#grandTotal")
+                .text(
+                    grandTotal.toFixed(2)
+                );
+        }
+
+
+        // Prevent Save Without Invoice Items
+        $("form").submit(function (e) {
+
+            if (
+                $("#invoiceItemsBody tr").length === 0
+            ) {
+
+                e.preventDefault();
+
+                alert(
+                    "Please add at least one invoice item."
+                );
+
+                return false;
+            }
+        });
+
+    </script>
+}

@@ -15,7 +15,7 @@ namespace Sales_Billing_System.Repositories
             _context = new SalesBillingDbContext();
         }
 
-        // Get list of all customers
+        // Get all customers
         public List<Customer_Master> GetAllCustomers()
         {
             return _context.Customers
@@ -30,17 +30,18 @@ namespace Sales_Billing_System.Repositories
                            .FirstOrDefault(c => c.CustomerId == customerId);
         }
 
-        // Add a new customer
+        // Add customer
         public void AddCustomer(Customer_Master customer)
         {
             _context.Customers.Add(customer);
             _context.SaveChanges();
         }
 
-        // Update existing customer
+        // Update customer
         public void UpdateCustomer(Customer_Master customer)
         {
-            Customer_Master existingCustomer = GetCustomerById(customer.CustomerId);
+            Customer_Master existingCustomer =
+                GetCustomerById(customer.CustomerId);
 
             if (existingCustomer != null)
             {
@@ -49,18 +50,6 @@ namespace Sales_Billing_System.Repositories
                 existingCustomer.Address = customer.Address;
                 existingCustomer.GSTIN = customer.GSTIN;
 
-                _context.SaveChanges();
-            }
-        }
-
-        // Delete customer
-        public void DeleteCustomer(int customerId)
-        {
-            Customer_Master customer = GetCustomerById(customerId);
-
-            if (customer != null)
-            {
-                _context.Customers.Remove(customer);
                 _context.SaveChanges();
             }
         }
@@ -77,7 +66,8 @@ namespace Sales_Billing_System.Repositories
                            .Where(c =>
                                c.CustomerName.Contains(searchText) ||
                                c.MobileNumber.Contains(searchText) ||
-                               (c.GSTIN != null && c.GSTIN.Contains(searchText)))
+                               (c.GSTIN != null &&
+                                c.GSTIN.Contains(searchText)))
                            .OrderByDescending(c => c.CustomerId)
                            .ToList();
         }

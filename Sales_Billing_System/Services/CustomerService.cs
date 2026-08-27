@@ -28,7 +28,7 @@ namespace Sales_Billing_System.Services
             return _customerRepository.GetCustomerById(customerId);
         }
 
-        // Add new customer
+        // Add customer
         public void AddCustomer(Customer_Master customer)
         {
             if (customer == null)
@@ -47,21 +47,15 @@ namespace Sales_Billing_System.Services
                 throw new ArgumentNullException("customer");
             }
 
-            _customerRepository.UpdateCustomer(customer);
-        }
+            Customer_Master existingCustomer =
+                _customerRepository.GetCustomerById(customer.CustomerId);
 
-        // Delete customer
-        public void DeleteCustomer(int customerId)
-        {
-            Customer_Master customer =
-                _customerRepository.GetCustomerById(customerId);
-
-            if (customer == null)
+            if (existingCustomer == null)
             {
                 throw new Exception("Customer not found.");
             }
 
-            _customerRepository.DeleteCustomer(customerId);
+            _customerRepository.UpdateCustomer(customer);
         }
 
         // Search customers
