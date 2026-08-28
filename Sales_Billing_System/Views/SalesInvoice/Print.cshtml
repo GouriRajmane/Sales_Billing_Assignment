@@ -45,7 +45,7 @@
 
 
         .invoice-container {
-            width: 650px;
+            width: 900px;
             max-width: 100%;
             margin: 0 auto;
             background-color: #ffffff;
@@ -121,20 +121,24 @@
         .invoice-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 14px;
+            table-layout: fixed;
+            font-size: 12px;
         }
 
 
-        .invoice-table th {
-            text-align: left;
-            padding: 8px 4px;
-            font-weight: bold;
-        }
+            .invoice-table th {
+                padding: 10px 5px;
+                font-weight: bold;
+                border-bottom: 1px solid #333;
+                vertical-align: bottom;
+            }
 
 
-        .invoice-table td {
-            padding: 8px 4px;
-        }
+            .invoice-table td {
+                padding: 10px 5px;
+                vertical-align: top;
+                word-wrap: break-word;
+            }
 
 
         .text-center {
@@ -178,7 +182,7 @@
         /* Print Controls */
 
         .print-actions {
-            width: 650px;
+            width: 900px;
             max-width: 100%;
             margin: 0 auto 20px auto;
             text-align: right;
@@ -231,16 +235,15 @@
             .invoice-container {
                 width: 100%;
                 max-width: 100%;
-                padding: 30px;
+                padding: 0;
                 margin: 0;
             }
 
 
             @@page {
-                size: A4;
-                margin: 20mm;
+                size: A4 landscape;
+                margin: 15mm;
             }
-
         }
 
 
@@ -249,7 +252,7 @@
         @@media (max-width: 768px) {
 
             .invoice-container {
-                padding: 25px 20px;
+                padding: 25px 15px;
             }
 
 
@@ -259,17 +262,15 @@
 
 
             .invoice-table {
-                font-size: 12px;
+                font-size: 10px;
             }
 
 
-            .invoice-table th,
-            .invoice-table td {
-                padding: 6px 2px;
-            }
-
+                .invoice-table th,
+                .invoice-table td {
+                    padding: 6px 3px;
+                }
         }
-
     </style>
 
 </head>
@@ -400,14 +401,31 @@
             </div>
 
 
-            <!-- Separator -->
-
             <hr class="separator" />
 
 
             <!-- Invoice Items -->
 
             <table class="invoice-table">
+
+                <colgroup>
+
+                    <col style="width: 20%;" />
+
+                    <col style="width: 8%;" />
+
+                    <col style="width: 12%;" />
+
+                    <col style="width: 12%;" />
+
+                    <col style="width: 8%;" />
+
+                    <col style="width: 20%;" />
+
+                    <col style="width: 20%;" />
+
+                </colgroup>
+
 
                 <thead>
 
@@ -428,8 +446,18 @@
                         </th>
 
 
+                        <th class="text-right">
+                            Discount
+                        </th>
+
+
                         <th class="text-center">
-                            GST
+                            GST %
+                        </th>
+
+
+                        <th class="text-right">
+                            Taxable Amount
                         </th>
 
 
@@ -467,7 +495,14 @@
                             <!-- Rate -->
 
                             <td class="text-right">
-                                @(item.Rate.ToString("N2"))
+                                ₹@(item.Rate.ToString("N2"))
+                            </td>
+
+
+                            <!-- Discount -->
+
+                            <td class="text-right">
+                                ₹@(item.Discount.ToString("N2"))
                             </td>
 
 
@@ -478,7 +513,14 @@
                             </td>
 
 
-                            <!-- Amount -->
+                            <!-- Taxable Amount -->
+
+                            <td class="text-right">
+                                ₹@(item.TaxableAmount.ToString("N2"))
+                            </td>
+
+
+                            <!-- Total Amount -->
 
                             <td class="text-right">
                                 ₹@(item.TotalAmount.ToString("N2"))
@@ -492,8 +534,6 @@
             </table>
 
 
-            <!-- Separator -->
-
             <hr class="separator" />
 
 
@@ -505,7 +545,7 @@
                 <div class="total-row">
 
                     <span class="total-label">
-                        Subtotal:
+                        Total Taxable Amount:
                     </span>
 
 
@@ -519,7 +559,7 @@
                 <div class="total-row">
 
                     <span class="total-label">
-                        GST:
+                        Total GST Amount:
                     </span>
 
 
@@ -530,12 +570,8 @@
                 </div>
 
 
-                <!-- Separator -->
-
                 <hr class="separator" />
 
-
-                <!-- Grand Total -->
 
                 <div class="total-row grand-total">
 
