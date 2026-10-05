@@ -1,6 +1,8 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Web.Mvc;
 
 namespace Sales_Billing_System.Models
 {
@@ -10,8 +12,11 @@ namespace Sales_Billing_System.Models
         {
             InvoiceDate = DateTime.Today;
 
-            Items =
-                new List<Sales_Invoice_Item>();
+            Items = new List<Sales_Invoice_Item>();
+
+            Customers = new List<SelectListItem>();
+
+            Products = new List<Product_Master>();
         }
 
         public int InvoiceId { get; set; }
@@ -24,8 +29,7 @@ namespace Sales_Billing_System.Models
         public DateTime InvoiceDate { get; set; }
 
         [Required(
-            ErrorMessage =
-            "Please select a customer."
+            ErrorMessage = "Please select a customer."
         )]
         public int CustomerId { get; set; }
 
@@ -36,5 +40,10 @@ namespace Sales_Billing_System.Models
         public decimal TotalGSTAmount { get; set; }
 
         public decimal GrandTotal { get; set; }
+
+        // Dropdown data
+        public List<SelectListItem> Customers { get; set; }
+
+        public List<Product_Master> Products { get; set; }
     }
 }

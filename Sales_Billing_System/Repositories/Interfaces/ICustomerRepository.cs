@@ -14,5 +14,10 @@ namespace Sales_Billing_System.Repositories.Interfaces
         void UpdateCustomer(Customer_Master customer);
 
         List<Customer_Master> SearchCustomers(string searchText);
+
+        PagedResult<Customer_Master> GetCustomersPaged(
+            int pageNumber,
+            int pageSize,
+            string searchText);
     }
 }

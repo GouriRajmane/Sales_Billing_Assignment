@@ -1,8 +1,10 @@
-﻿using Sales_Billing_System.Data;
+﻿using MySql.Data.MySqlClient;
+using Sales_Billing_System.Data;
 using Sales_Billing_System.Models;
 using Sales_Billing_System.Repositories.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Entity;
 using System.Linq;
 
@@ -17,13 +19,14 @@ namespace Sales_Billing_System.Repositories
             _context = new SalesBillingDbContext();
         }
 
-        // Get List of all products
+        // Get List of all products ordered by ProductId descending
         public List<Product_Master> GetAllProducts()
-        { 
+        {
             return _context.Products
-                            .OrderBy(p => p.ProductId)
+                            .OrderBy(p => p.ProductName)
                             .ToList();
         }
+
 
         //Get product by ID
         public Product_Master GetProductById(int productId)
@@ -93,6 +96,103 @@ namespace Sales_Billing_System.Repositories
                             (p.SKU!= null && p.SKU.Contains(searchText)))
                             .OrderByDescending(p => p.ProductId)
                             .ToList();
+        }
+
+        public PagedResult<Product_Master> GetProductsPaged(
+    int pageNumber,
+    int pageSize,
+    string searchText)
+        {
+            var result = new PagedResult<Product_Master>();
+
+            result.CurrentPage = pageNumber;
+            result.PageSize = pageSize;
+
+            using (var connection =
+                (MySqlConnection)_context.Database.Connection)
+            {
+                if (connection.State != ConnectionState.Open)
+                {
+                    connection.Open();
+                }
+
+                using (var command =
+                    new MySqlCommand("sp_GetProductsPaged", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+
+                    command.Parameters.AddWithValue(
+                        "@p_PageNumber",
+                        pageNumber);
+
+                    command.Parameters.AddWithValue(
+                        "@p_PageSize",
+                        pageSize);
+
+                    command.Parameters.AddWithValue(
+                        "@p_SearchText",
+                        string.IsNullOrWhiteSpace(searchText)
+                            ? (object)DBNull.Value
+                            : searchText.Trim());
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        // ==============================
+                        // RESULT SET 1 - PRODUCTS
+                        // ==============================
+
+                        while (reader.Read())
+                        {
+                            var product = new Product_Master
+                            {
+                                ProductId = Convert.ToInt32(
+                                    reader["ProductId"]),
+
+                                ProductName = reader["ProductName"] == DBNull.Value
+                                    ? null
+                                    : reader["ProductName"].ToString(),
+
+                                SKU = reader["SKU"] == DBNull.Value
+                                    ? null
+                                    : reader["SKU"].ToString(),
+
+                                Unit = reader["Unit"] == DBNull.Value
+                                    ? null
+                                    : reader["Unit"].ToString(),
+
+                                SellingPrice = reader["SellingPrice"] == DBNull.Value
+                                    ? 0
+                                    : Convert.ToDecimal(
+                                        reader["SellingPrice"]),
+
+                                GSTPercentage = reader["GSTPercentage"] == DBNull.Value
+                                    ? 0
+                                    : Convert.ToDecimal(
+                                        reader["GSTPercentage"]),
+
+                                IsActive = reader["IsActive"] != DBNull.Value &&
+                                           Convert.ToBoolean(
+                                               reader["IsActive"])
+                            };
+
+                            result.Items.Add(product);
+                        }
+
+                        // ==============================
+                        // RESULT SET 2 - TOTAL COUNT
+                        // ==============================
+
+                        if (reader.NextResult() && reader.Read())
+                        {
+                            result.TotalRecords =
+                                Convert.ToInt32(
+                                    reader["TotalRecords"]);
+                        }
+                    }
+                }
+            }
+
+            return result;
         }
 
 

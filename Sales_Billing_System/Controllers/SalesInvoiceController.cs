@@ -2,20 +2,23 @@
 using Sales_Billing_System.Services;
 using Sales_Billing_System.Services.Interfaces;
 using System;
+using System.Linq;
 using System.Web.Mvc;
 
 namespace Sales_Billing_System.Controllers
 {
     public class SalesInvoiceController : Controller
     {
-        private readonly ISalesInvoiceService
-            _invoiceService;
+        private readonly ISalesInvoiceService _invoiceService;
 
-        private readonly ICustomerService
-            _customerService;
+        private readonly ICustomerService _customerService;
 
-        private readonly IProductService
-            _productService;
+        private readonly IProductService _productService;
+
+
+        // =========================================================
+        // CONSTRUCTOR
+        // =========================================================
 
         public SalesInvoiceController()
         {
@@ -29,11 +32,17 @@ namespace Sales_Billing_System.Controllers
                 new ProductService();
         }
 
-        // GET: SalesInvoice
+
+        // =========================================================
+        // INDEX
+        // =========================================================
+
         public ActionResult Index(
             string searchText,
             DateTime? fromDate,
-            DateTime? toDate)
+            DateTime? toDate,
+            int page = 1,
+            int pageSize = 10)
         {
             ViewBag.SearchText =
                 searchText;
@@ -44,37 +53,84 @@ namespace Sales_Billing_System.Controllers
             ViewBag.ToDate =
                 toDate;
 
+            ViewBag.PageSize =
+                pageSize;
+
             var invoices =
-                _invoiceService.SearchInvoices(
+                _invoiceService.GetInvoicesPaged(
+                    page,
+                    pageSize,
                     searchText,
                     fromDate,
-                    toDate
-                );
+                    toDate);
 
             return View(invoices);
         }
 
-        // GET: SalesInvoice/Create
+        //public ActionResult Index(
+        //    string searchText,
+        //    DateTime? fromDate,
+        //    DateTime? toDate)
+        //{
+        //    ViewBag.SearchText =
+        //        searchText;
+
+        //    ViewBag.FromDate =
+        //        fromDate;
+
+        //    ViewBag.ToDate =
+        //        toDate;
+
+        //    var invoices =
+        //        _invoiceService.SearchInvoices(
+        //            searchText,
+        //            fromDate,
+        //            toDate
+        //        );
+
+        //    return View(invoices);
+        //}
+
+
+
+        // =========================================================
+        // CREATE - GET
+        // =========================================================
+
         [HttpGet]
         public ActionResult Create()
         {
-            LoadDropdownData();
-
             SalesInvoiceViewModel model =
                 new SalesInvoiceViewModel();
+
+
+            // Generate invoice number
 
             model.InvoiceNumber =
                 _invoiceService
                     .GenerateInvoiceNumber();
 
+
+            // Add first invoice item
+
             model.Items.Add(
                 new Sales_Invoice_Item()
             );
 
+
+            // Load customers and products
+
+            LoadDropdownData(model);
+
+
             return View(model);
         }
 
-        // POST: SalesInvoice/Create
+
+        // =========================================================
+        // CREATE - POST
+        // =========================================================
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Create(
@@ -82,72 +138,115 @@ namespace Sales_Billing_System.Controllers
         {
             if (!ModelState.IsValid)
             {
-                LoadDropdownData();
+                LoadDropdownData(model);
 
                 return View(model);
             }
+
 
             try
             {
                 _invoiceService
                     .CreateInvoice(model);
 
+
                 TempData["SuccessMessage"] =
                     "Invoice created successfully.";
 
-                return RedirectToAction("Index");
+
+                return RedirectToAction(
+                    "Index"
+                );
             }
             catch (Exception ex)
             {
-                LoadDropdownData();
+                LoadDropdownData(model);
+
 
                 ModelState.AddModelError(
                     "",
                     ex.Message
                 );
 
+
                 return View(model);
             }
         }
 
-        // GET: SalesInvoice/Details/5
+
+        // =========================================================
+        // DETAILS
+        // =========================================================
+
         public ActionResult Details(int id)
         {
             Sales_Invoice invoice =
                 _invoiceService
                     .GetInvoiceById(id);
 
+
             if (invoice == null)
             {
                 return HttpNotFound();
             }
 
+
             return View(invoice);
         }
 
-        // GET: SalesInvoice/Print/5
+
+        // =========================================================
+        // PRINT
+        // =========================================================
+
         public ActionResult Print(int id)
         {
+            if (id <= 0)
+            {
+                return new HttpStatusCodeResult(400, "Invalid invoice ID.");
+            }
+
             Sales_Invoice invoice =
-                _invoiceService
-                    .GetInvoiceById(id);
+                _invoiceService.GetPrintInvoiceData(id);
 
             if (invoice == null)
             {
-                return HttpNotFound();
+                return HttpNotFound("Invoice not found.");
             }
 
             return View(invoice);
         }
 
-        // POST: SalesInvoice/Cancel/5
+        //public ActionResult Print(int id)
+        //{
+        //    Sales_Invoice invoice =
+        //        _invoiceService
+        //            .GetInvoiceById(id);
+
+
+        //    if (invoice == null)
+        //    {
+        //        return HttpNotFound();
+        //    }
+
+
+        //    return View(invoice);
+        //}
+
+
+        // =========================================================
+        // CANCEL
+        // =========================================================
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Cancel(int id)
         {
             try
             {
-                _invoiceService.CancelInvoice(id);
+                _invoiceService
+                    .CancelInvoice(id);
+
 
                 TempData["SuccessMessage"] =
                     "Invoice cancelled successfully.";
@@ -158,26 +257,107 @@ namespace Sales_Billing_System.Controllers
                     ex.Message;
             }
 
-            return RedirectToAction("Index");
+
+            return RedirectToAction(
+                "Index"
+            );
         }
 
-        private void LoadDropdownData()
+
+        // =========================================================
+        // GET PRODUCT DETAILS
+        // =========================================================
+        // This method is kept in case you want AJAX
+        // product loading later.
+        //
+        // Current Create.cshtml does NOT depend on this method.
+        // It uses data-rate and data-gst directly.
+        // =========================================================
+
+        [HttpGet]
+        public JsonResult GetProductDetails(int id)
         {
-            ViewBag.Customers =
-                new SelectList(
-                    _customerService
-                        .GetAllCustomers(),
-                    "CustomerId",
-                    "CustomerName"
-                );
+            var product =
+                _productService
+                    .GetProductById(id);
 
-            ViewBag.Products =
-                new SelectList(
-                    _productService
-                        .GetActiveProducts(),
-                    "ProductId",
-                    "ProductName"
+
+            if (product == null ||
+                !product.IsActive)
+            {
+                return Json(
+                    new
+                    {
+                        success = false,
+                        message =
+                            "Product not found or inactive."
+                    },
+                    JsonRequestBehavior.AllowGet
                 );
+            }
+
+
+            return Json(
+                new
+                {
+                    success = true,
+
+                    productId =
+                        product.ProductId,
+
+                    productName =
+                        product.ProductName,
+
+                    rate =
+                        product.SellingPrice,
+
+                    gstPercentage =
+                        product.GSTPercentage
+                },
+                JsonRequestBehavior.AllowGet
+            );
         }
+
+
+        // =========================================================
+        // LOAD DROPDOWN DATA
+        // =========================================================
+
+        private void LoadDropdownData(
+            SalesInvoiceViewModel model)
+        {
+            // -----------------------------------------------------
+            // CUSTOMERS
+            // -----------------------------------------------------
+
+            model.Customers =
+                _customerService
+                    .GetAllCustomers()
+                    .Select(c => new SelectListItem
+                    {
+                        Value =
+                            c.CustomerId.ToString(),
+
+                        Text =
+                            c.CustomerName,
+
+                        Selected =
+                            c.CustomerId ==
+                            model.CustomerId
+                    })
+                    .ToList();
+
+
+            // -----------------------------------------------------
+            // ACTIVE PRODUCTS
+            // -----------------------------------------------------
+
+            model.Products =
+                _productService
+                    .GetActiveProducts()
+                    .ToList();
+        }
+
+
     }
 }

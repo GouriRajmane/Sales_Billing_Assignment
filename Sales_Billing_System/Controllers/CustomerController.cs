@@ -16,19 +16,37 @@ namespace Sales_Billing_System.Controllers
         }
 
         // Customer Listing and Search
-        public ActionResult Index(string searchText)
+
+        // GET: Customer
+        public ActionResult Index(
+            string searchText,
+            int page = 1,
+            int pageSize = 10)
         {
             ViewBag.SearchText = searchText;
+            ViewBag.PageSize = pageSize;
 
-            if (string.IsNullOrWhiteSpace(searchText))
-            {
-                return View(_customerService.GetAllCustomers());
-            }
+            var customers =
+                _customerService.GetCustomersPaged(
+                    page,
+                    pageSize,
+                    searchText);
 
-            return View(
-                _customerService.SearchCustomers(searchText)
-            );
+            return View(customers);
         }
+        //public ActionResult Index(string searchText)
+        //{
+        //    ViewBag.SearchText = searchText;
+
+        //    if (string.IsNullOrWhiteSpace(searchText))
+        //    {
+        //        return View(_customerService.GetAllCustomers());
+        //    }
+
+        //    return View(
+        //        _customerService.SearchCustomers(searchText)
+        //    );
+        //}
 
         // Customer Details
         public ActionResult Details(int id)

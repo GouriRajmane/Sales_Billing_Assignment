@@ -16,16 +16,33 @@ namespace Sales_Billing_System.Controllers
         }
 
         // Product Listing
-        public ActionResult Index(string searchText)
+
+        public ActionResult Index(
+        string searchText,
+        int page = 1,
+        int pageSize = 10)
         {
-            var products = string.IsNullOrWhiteSpace(searchText)
-                ? _productService.GetAllProducts()
-                : _productService.SearchProduct(searchText);
+            var result = _productService.GetProductsPaged(
+                page,
+                pageSize,
+                searchText);
 
             ViewBag.SearchText = searchText;
+            ViewBag.PageSize = pageSize;
 
-            return View(products);
+            return View(result);
         }
+
+        //public ActionResult Index(string searchText)
+        //{
+        //    var products = string.IsNullOrWhiteSpace(searchText)
+        //        ? _productService.GetAllProducts()
+        //        : _productService.SearchProduct(searchText);
+
+        //    ViewBag.SearchText = searchText;
+
+        //    return View(products);
+        //}
 
         // Create Product - GET
         [HttpGet]

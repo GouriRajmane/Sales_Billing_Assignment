@@ -13,7 +13,9 @@ namespace Sales_Billing_System.Models
         public string CustomerName { get; set; }
 
         [Required]
-        [StringLength(15)]
+        [StringLength(10, MinimumLength = 10)]
+        [RegularExpression(@"^[6-9]\d{9}$",
+           ErrorMessage = "Please enter a valid 10-digit Indian mobile number.")]
         public string MobileNumber { get; set; }
 
         [Required]

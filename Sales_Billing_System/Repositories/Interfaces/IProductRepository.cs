@@ -24,5 +24,10 @@ namespace Sales_Billing_System.Repositories.Interfaces
 
         // Search products
         List<Product_Master> SearchProduct(string searchText);
+
+        PagedResult<Product_Master> GetProductsPaged(
+            int pageNumber,
+            int pageSize,
+            string searchText);
     }
 }

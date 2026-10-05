@@ -21,5 +21,14 @@ namespace Sales_Billing_System.Services.Interfaces
         void CancelInvoice(int invoiceId);
 
         string GenerateInvoiceNumber();
+
+        Sales_Invoice GetPrintInvoiceData(int invoiceId);
+
+        PagedResult<Sales_Invoice> GetInvoicesPaged(
+            int pageNumber,
+            int pageSize,
+            string searchText,
+            DateTime? fromDate,
+            DateTime? toDate);
     }
 }

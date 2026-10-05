@@ -1,4 +1,4 @@
-﻿@model IEnumerable<Sales_Billing_System.Models.Sales_Invoice>
+﻿@model Sales_Billing_System.Models.PagedResult<Sales_Billing_System.Models.Sales_Invoice>
 
 @{
     ViewBag.Title = "Sales Invoices";
@@ -19,13 +19,15 @@
             </p>
         </div>
 
-        @Html.ActionLink(
-            "+ Create Invoice",
-            "Create",
-            "SalesInvoice",
-            null,
-            new { @class = "btn btn-primary" }
-        )
+        <div>
+            @Html.ActionLink(
+                "+ Create Invoice",
+                "Create",
+                "SalesInvoice",
+                null,
+                new { @class = "btn btn-primary" }
+            )
+        </div>
 
     </div>
 
@@ -72,8 +74,7 @@
             @using (Html.BeginForm(
                 "Index",
                 "SalesInvoice",
-                FormMethod.Get
-            ))
+                FormMethod.Get))
             {
                 <div class="row g-3 align-items-end">
 
@@ -106,7 +107,9 @@
 
                         <input type="date"
                                name="fromDate"
-                               value="@(ViewBag.FromDate != null ? ((DateTime)ViewBag.FromDate).ToString("yyyy-MM-dd") : "")"
+                               value="@(ViewBag.FromDate != null
+                                   ? ((DateTime)ViewBag.FromDate).ToString("yyyy-MM-dd")
+                                   : "")"
                                class="form-control" />
 
                     </div>
@@ -121,7 +124,9 @@
 
                         <input type="date"
                                name="toDate"
-                               value="@(ViewBag.ToDate != null ? ((DateTime)ViewBag.ToDate).ToString("yyyy-MM-dd") : "")"
+                               value="@(ViewBag.ToDate != null
+                                   ? ((DateTime)ViewBag.ToDate).ToString("yyyy-MM-dd")
+                                   : "")"
                                class="form-control" />
 
                     </div>
@@ -177,7 +182,7 @@
 
                         <tr>
 
-                            <th>#</th>
+                            <th>Sr. No.</th>
 
                             <th>Invoice Number</th>
 
@@ -200,51 +205,52 @@
 
                     <tbody>
 
-                        @if (Model != null && Model.Any())
+                        @if (Model != null &&
+                            Model.Items != null &&
+                            Model.Items.Any())
                         {
-                            int count = 1;
+                            int count =
+                                ((Model.CurrentPage - 1) * Model.PageSize) + 1;
 
-                            foreach (var invoice in Model)
+                            foreach (var invoice in Model.Items)
                             {
                                 <tr>
 
+                                    <!-- Sr. No. -->
                                     <td>
                                         @count
                                     </td>
 
 
+                                    <!-- Invoice Number -->
                                     <td>
-
                                         <strong>
                                             @invoice.InvoiceNumber
                                         </strong>
-
                                     </td>
 
 
+                                    <!-- Date -->
                                     <td>
-
-                                        @(invoice.InvoiceDate.ToString("dd-MM-yyyy"))
-
+                                        @invoice.InvoiceDate.ToString("dd-MM-yyyy")
                                     </td>
 
 
+                                    <!-- Customer -->
                                     <td>
-
                                         @(invoice.Customer != null
                                             ? invoice.Customer.CustomerName
                                             : "")
-
                                     </td>
 
 
+                                    <!-- Grand Total -->
                                     <td>
-
-                                        ₹@(invoice.GrandTotal.ToString("N2"))
-
+                                        ₹ @invoice.GrandTotal.ToString("N2")
                                     </td>
 
 
+                                    <!-- Status -->
                                     <td>
 
                                         @if (invoice.Status == "Active")
@@ -263,6 +269,7 @@
                                     </td>
 
 
+                                    <!-- Actions -->
                                     <td class="text-center">
 
                                         @Html.ActionLink(
@@ -275,7 +282,6 @@
                                             }
                                         )
 
-
                                         @Html.ActionLink(
                                             "Print",
                                             "Print",
@@ -286,7 +292,6 @@
                                             }
                                         )
 
-
                                         @if (invoice.Status != "Cancelled")
                                         {
                                             using (Html.BeginForm(
@@ -294,8 +299,7 @@
                                                 "SalesInvoice",
                                                 new { id = invoice.InvoiceId },
                                                 FormMethod.Post,
-                                                new { @class = "d-inline" }
-                                            ))
+                                                new { @class = "d-inline" }))
                                             {
                                                 @Html.AntiForgeryToken()
 
@@ -323,13 +327,17 @@
                                 <td colspan="7"
                                     class="text-center py-4">
 
-                                    <h5 class="text-muted">
-                                        No Invoices Found
-                                    </h5>
+                                    <div class="text-muted">
 
-                                    <p class="text-muted mb-0">
-                                        No sales invoices are available.
-                                    </p>
+                                        <h5>
+                                            No Invoices Found
+                                        </h5>
+
+                                        <p class="mb-0">
+                                            No sales invoices are available.
+                                        </p>
+
+                                    </div>
 
                                 </td>
 
@@ -345,5 +353,165 @@
         </div>
 
     </div>
+
+
+    <!-- Pagination -->
+    @if (Model != null && Model.TotalPages > 0)
+    {
+        <div class="row mt-4">
+
+            <!-- Record Information -->
+            <div class="col-md-6">
+
+                <p class="text-muted">
+
+                    Showing
+
+                    <strong>
+                        @(((Model.CurrentPage - 1) * Model.PageSize) + 1)
+                    </strong>
+
+                    -
+
+                    <strong>
+                        @(Math.Min(
+                            Model.CurrentPage * Model.PageSize,
+                            Model.TotalRecords))
+                    </strong>
+
+                    of
+
+                    <strong>
+                        @Model.TotalRecords
+                    </strong>
+
+                    invoices
+
+                </p>
+
+            </div>
+
+
+            <!-- Pagination -->
+            <div class="col-md-6 text-end">
+
+                <ul class="pagination justify-content-end">
+
+                    <!-- Previous -->
+                    @if (Model.CurrentPage > 1)
+                    {
+                        <li class="page-item">
+
+                            <a class="page-link"
+                               href="@Url.Action(
+                                   "Index",
+                                   "SalesInvoice",
+                                   new
+                                   {
+                                       page = Model.CurrentPage - 1,
+                                       pageSize = Model.PageSize,
+                                       searchText = ViewBag.SearchText,
+                                       fromDate = ViewBag.FromDate,
+                                       toDate = ViewBag.ToDate
+                                   })">
+
+                                &laquo; Previous
+
+                            </a>
+
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="page-item disabled">
+
+                            <span class="page-link">
+                                &laquo; Previous
+                            </span>
+
+                        </li>
+                    }
+
+
+                    <!-- Page Numbers -->
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        if (i == Model.CurrentPage)
+                        {
+                            <li class="page-item active">
+
+                                <span class="page-link">
+                                    @i
+                                </span>
+
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="page-item">
+
+                                <a class="page-link"
+                                   href="@Url.Action(
+                                       "Index",
+                                       "SalesInvoice",
+                                       new
+                                       {
+                                           page = i,
+                                           pageSize = Model.PageSize,
+                                           searchText = ViewBag.SearchText,
+                                           fromDate = ViewBag.FromDate,
+                                           toDate = ViewBag.ToDate
+                                       })">
+
+                                    @i
+
+                                </a>
+
+                            </li>
+                        }
+                    }
+
+
+                    <!-- Next -->
+                    @if (Model.CurrentPage < Model.TotalPages)
+                    {
+                        <li class="page-item">
+
+                            <a class="page-link"
+                               href="@Url.Action(
+                                   "Index",
+                                   "SalesInvoice",
+                                   new
+                                   {
+                                       page = Model.CurrentPage + 1,
+                                       pageSize = Model.PageSize,
+                                       searchText = ViewBag.SearchText,
+                                       fromDate = ViewBag.FromDate,
+                                       toDate = ViewBag.ToDate
+                                   })">
+
+                                Next &raquo;
+
+                            </a>
+
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="page-item disabled">
+
+                            <span class="page-link">
+                                Next &raquo;
+                            </span>
+
+                        </li>
+                    }
+
+                </ul>
+
+            </div>
+
+        </div>
+    }
 
 </div>

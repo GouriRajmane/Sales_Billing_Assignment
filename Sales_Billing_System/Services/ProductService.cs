@@ -79,5 +79,26 @@ namespace Sales_Billing_System.Services
         {
             return _productRepository.SearchProduct(searchText);
         }
+
+        //Pagination
+        public PagedResult<Product_Master> GetProductsPaged(
+        int pageNumber,
+        int pageSize,
+        string searchText)
+        {
+            if (pageNumber < 1)
+                pageNumber = 1;
+
+            if (pageSize <= 0)
+                pageSize = 10;
+
+            if (pageSize > 100)
+                pageSize = 100;
+
+            return _productRepository.GetProductsPaged(
+                pageNumber,
+                pageSize,
+                searchText);
+        }
     }
 }

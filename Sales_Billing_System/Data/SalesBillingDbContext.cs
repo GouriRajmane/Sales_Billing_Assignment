@@ -1,8 +1,10 @@
-﻿using System.Data.Entity;
+﻿using MySql.Data.EntityFramework;
+using System.Data.Entity;
 using Sales_Billing_System.Models;
 
 namespace Sales_Billing_System.Data
 {
+    [DbConfigurationType(typeof(MySqlEFConfiguration))]
     public class SalesBillingDbContext : DbContext
     {
         public SalesBillingDbContext()
@@ -41,11 +43,14 @@ namespace Sales_Billing_System.Data
                 .HasForeignKey(i => i.ProductId)
                 .WillCascadeOnDelete(false);
 
-
-            // Decimal Precision
+            // Decimal precision
             modelBuilder.Entity<Product_Master>()
                 .Property(p => p.SellingPrice)
                 .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Product_Master>()
+                .Property(p => p.GSTPercentage)
+                .HasPrecision(5, 2);
 
             modelBuilder.Entity<Sales_Invoice>()
                 .Property(i => i.TotalTaxableAmount)
@@ -58,7 +63,6 @@ namespace Sales_Billing_System.Data
             modelBuilder.Entity<Sales_Invoice>()
                 .Property(i => i.GrandTotal)
                 .HasPrecision(18, 2);
-
 
             modelBuilder.Entity<Sales_Invoice_Item>()
                 .Property(i => i.Quantity)
@@ -87,7 +91,6 @@ namespace Sales_Billing_System.Data
             modelBuilder.Entity<Sales_Invoice_Item>()
                 .Property(i => i.TotalAmount)
                 .HasPrecision(18, 2);
-
 
             base.OnModelCreating(modelBuilder);
         }

@@ -1,132 +1,170 @@
-﻿@model IEnumerable<Sales_Billing_System.Models.Product_Master>
+﻿
+@model Sales_Billing_System.Models.PagedResult<Sales_Billing_System.Models.Product_Master>
+
 @using System.Linq
 
 @{
-    ViewBag.Title = "Product List";
+    ViewBag.Title = "Products";
 }
-<div class="container">
 
-    <div class="row">
+<div class="container mt-4">
 
-        <div class="col-md-12">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
 
-            <div class="panel panel-primary">
+        <div>
+            <h2 class="mb-1">Product Master</h2>
 
-                <div class="panel-heading">
-                    <div class="row">
+            <p class="text-muted mb-0">
+                Manage your products, pricing and GST information.
+            </p>
+        </div>
 
-                        <div class="col-md-6">
-                            <h3 class="panel-title">
-                                Product Master
-                            </h3>
-                        </div>
+        <div>
+            @Html.ActionLink(
+                "+ Add Product",
+                "Create",
+                "Product",
+                null,
+                new { @class = "btn btn-primary" }
+            )
+        </div>
 
-                        <div class="col-md-6 text-right">
-                            @Html.ActionLink(
-                                "Add New Product",
-                                "Create",
-                                "Product",
-                                null,
-                                new { @class = "btn btn-success btn-sm" }
-                            )
-                        </div>
+    </div>
 
-                    </div>
+
+    <!-- Success Message -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+
+                @TempData["SuccessMessage"]
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert">
+                </button>
+
+            </div>
+            }
+
+
+            <!-- Error Message -->
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show"
+                     role="alert">
+
+                    @TempData["ErrorMessage"]
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="alert">
+                    </button>
+
                 </div>
+            }
 
 
-                <div class="panel-body">
+            <!-- Search Section -->
+            <div class="card shadow-sm mb-4">
 
-                    <!-- Success Message -->
-                    @if (TempData["SuccessMessage"] != null)
-                    {
-                        <div class="alert alert-success alert-dismissible">
+                <div class="card-body">
 
-                            <button type="button"
-                                    class="close"
-                                    data-dismiss="alert">
-                                &times;
-                            </button>
-
-                            @TempData["SuccessMessage"]
-
-                        </div>
-                    }
-
-
-                    <!-- Error Message -->
-                    @if (TempData["ErrorMessage"] != null)
-                    {
-                        <div class="alert alert-danger alert-dismissible">
-
-                            <button type="button"
-                                    class="close"
-                                    data-dismiss="alert">
-                                &times;
-                            </button>
-
-                            @TempData["ErrorMessage"]
-
-                        </div>
-                    }
-
-
-                    <!-- Search Form -->
                     @using (Html.BeginForm(
                         "Index",
                         "Product",
-                        FormMethod.Get,
-                        new { @class = "form-inline" }))
+                        FormMethod.Get))
                     {
-                        <div class="form-group">
+                        <div class="row g-2 align-items-center">
 
-                            <input type="text"
-                                   name="searchText"
-                                   value="@ViewBag.SearchText"
-                                   class="form-control"
-                                   placeholder="Search by Product Name or SKU" />
+                            <div class="col-md-9">
+
+                                @Html.TextBox(
+                                    "searchText",
+                                    ViewBag.SearchText as string,
+                                    new
+                                    {
+                                        @class = "form-control",
+                                        placeholder = "Search by product name or SKU..."
+                                    }
+                                )
+
+                            </div>
+
+                            <div class="col-md-2">
+
+                                <button type="submit"
+                                        class="btn btn-primary w-100">
+                                    Search
+                                </button>
+
+                            </div>
+
+                            <div class="col-md-1">
+
+                                @Html.ActionLink(
+                                    "Clear",
+                                    "Index",
+                                    "Product",
+                                    null,
+                                    new
+                                    {
+                                        @class = "btn btn-secondary w-100"
+                                    }
+                                )
+
+                            </div>
 
                         </div>
-
-                        <button type="submit"
-                                class="btn btn-primary">
-                            Search
-                        </button>
-
-                        @Html.ActionLink(
-                            "Clear",
-                            "Index",
-                            "Product",
-                            null,
-                            new { @class = "btn btn-default" }
-                        )
                     }
 
-                    <hr />
+                </div>
+
+            </div>
 
 
-                    <!-- Product Table -->
+            <!-- Product Table -->
+            <div class="card shadow-sm">
+
+                <div class="card-body">
+
                     <div class="table-responsive">
 
-                        <table class="table table-bordered table-hover">
+                        <table class="table table-hover align-middle mb-0">
 
-                            <thead>
+                            <thead class="table-dark">
 
                                 <tr>
 
-                                    <th>Product ID</th>
+                                    <th>
+                                        Sr. No.
+                                    </th>
 
-                                    <th>Product Name</th>
+                                    <th>
+                                        Product Name
+                                    </th>
 
-                                    <th>SKU</th>
+                                    <th>
+                                        SKU
+                                    </th>
 
-                                    <th>Unit</th>
+                                    <th>
+                                        Unit
+                                    </th>
 
-                                    <th>Selling Price</th>
+                                    <th>
+                                        Selling Price
+                                    </th>
 
-                                    <th>GST %</th>
+                                    <th>
+                                        GST %
+                                    </th>
 
-                                    <th>Status</th>
+                                    <th>
+                                        Status
+                                    </th>
 
                                     <th class="text-center">
                                         Actions
@@ -139,50 +177,79 @@
 
                             <tbody>
 
-                                @if (Model != null && Model.Any())
+                                @if (Model != null &&
+                                     Model.Items != null &&
+                                     Model.Items.Any())
                                 {
-                                    foreach (var product in Model)
+                                    int count =
+                                        ((Model.CurrentPage - 1) *
+                                        Model.PageSize) + 1;
+
+                                    foreach (var product in Model.Items)
                                     {
                                         <tr>
 
+                                            <!-- Serial Number -->
                                             <td>
-                                                @product.ProductId
+                                                @count
                                             </td>
 
+
+                                            <!-- Product Name -->
                                             <td>
-                                                @product.ProductName
+                                                <strong>
+                                                    @product.ProductName
+                                                </strong>
                                             </td>
 
+
+                                            <!-- SKU -->
                                             <td>
-                                                @(string.IsNullOrEmpty(product.SKU)
-                                                    ? "-"
-                                                    : product.SKU)
+
+                                                @if (!string.IsNullOrWhiteSpace(product.SKU))
+                                                {
+                                                    @product.SKU
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">
+                                                        Not Available
+                                                    </span>
+                                                }
+
                                             </td>
 
+
+                                            <!-- Unit -->
                                             <td>
                                                 @product.Unit
                                             </td>
 
+
+                                            <!-- Selling Price -->
                                             <td>
                                                 ₹ @product.SellingPrice.ToString("N2")
                                             </td>
 
+
+                                            <!-- GST -->
                                             <td>
-                                                @product.GSTPercentage %
+                                                @product.GSTPercentage.ToString("N2") %
                                             </td>
 
 
+                                            <!-- Status -->
                                             <td>
 
                                                 @if (product.IsActive)
                                                 {
-                                                    <span class="label label-success">
+                                                    <span class="badge bg-success">
                                                         Active
                                                     </span>
                                                 }
                                                 else
                                                 {
-                                                    <span class="label label-danger">
+                                                    <span class="badge bg-danger">
                                                         Inactive
                                                     </span>
                                                 }
@@ -190,15 +257,32 @@
                                             </td>
 
 
+                                            <!-- Actions -->
                                             <td class="text-center">
+
+                                                @Html.ActionLink(
+                                                    "Details",
+                                                    "Details",
+                                                    new
+                                                    {
+                                                        id = product.ProductId
+                                                    },
+                                                    new
+                                                    {
+                                                        @class = "btn btn-sm btn-info me-1"
+                                                    }
+                                                )
 
                                                 @Html.ActionLink(
                                                     "Edit",
                                                     "Edit",
-                                                    new { id = product.ProductId },
                                                     new
                                                     {
-                                                        @class = "btn btn-warning btn-sm"
+                                                        id = product.ProductId
+                                                    },
+                                                    new
+                                                    {
+                                                        @class = "btn btn-sm btn-warning me-1"
                                                     }
                                                 )
 
@@ -206,11 +290,14 @@
                                                 @using (Html.BeginForm(
                                                     "ToggleStatus",
                                                     "Product",
-                                                    new { id = product.ProductId },
+                                                    new
+                                                    {
+                                                        id = product.ProductId
+                                                    },
                                                     FormMethod.Post,
                                                     new
                                                     {
-                                                        @style = "display:inline;"
+                                                        @class = "d-inline"
                                                     }))
                                                 {
                                                     @Html.AntiForgeryToken()
@@ -218,7 +305,7 @@
                                                     if (product.IsActive)
                                                     {
                                                         <button type="submit"
-                                                                class="btn btn-danger btn-sm"
+                                                                class="btn btn-sm btn-danger"
                                                                 onclick="return confirm('Are you sure you want to deactivate this product?');">
                                                             Deactivate
                                                         </button>
@@ -226,7 +313,7 @@
                                                     else
                                                     {
                                                         <button type="submit"
-                                                                class="btn btn-success btn-sm"
+                                                                class="btn btn-sm btn-success"
                                                                 onclick="return confirm('Are you sure you want to activate this product?');">
                                                             Activate
                                                         </button>
@@ -236,6 +323,8 @@
                                             </td>
 
                                         </tr>
+
+                                        count++;
                                     }
                                 }
                                 else
@@ -243,9 +332,19 @@
                                     <tr>
 
                                         <td colspan="8"
-                                            class="text-center text-muted">
+                                            class="text-center py-4">
 
-                                            No products found.
+                                            <div class="text-muted">
+
+                                                <h5>
+                                                    No Products Found
+                                                </h5>
+
+                                                <p class="mb-0">
+                                                    There are currently no products available.
+                                                </p>
+
+                                            </div>
 
                                         </td>
 
@@ -262,8 +361,181 @@
 
             </div>
 
+
+            <!-- =========================
+         PAGINATION
+    ========================== -->
+
+            @if (Model != null && Model.TotalPages > 0)
+            {
+                <div class="row mt-4">
+
+                    <!-- Record Information -->
+                    <div class="col-md-6">
+
+                        <p class="text-muted">
+
+                            Showing
+
+                            <strong>
+                                @(((Model.CurrentPage - 1) *
+                        Model.PageSize) + 1)
+                            </strong>
+
+                            -
+
+                            <strong>
+                                @(Math.Min(
+                            Model.CurrentPage *
+                            Model.PageSize,
+                            Model.TotalRecords))
+                            </strong>
+
+                            of
+
+                            <strong>
+                                @Model.TotalRecords
+                            </strong>
+
+                            products
+
+                        </p>
+
+                    </div>
+
+
+                    <!-- Pagination -->
+                    <div class="col-md-6 text-end">
+
+                        <ul class="pagination justify-content-end">
+
+                            <!-- Previous -->
+                            @if (Model.CurrentPage > 1)
+                            {
+                                <li class="page-item">
+
+                                    <a class="page-link"
+                                       href="@Url.Action(
+                                   "Index",
+                                   "Product",
+                                   new
+                                   {
+                                       page =
+                                           Model.CurrentPage - 1,
+
+                                       pageSize =
+                                           Model.PageSize,
+
+                                       searchText =
+                                           ViewBag.SearchText
+                                   })">
+
+                                        &laquo; Previous
+
+                                    </a>
+
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="page-item disabled">
+
+                                    <span class="page-link">
+                                        &laquo; Previous
+                                    </span>
+
+                                </li>
+                            }
+
+
+                            <!-- Page Numbers -->
+                            @for (
+                                int i = 1;
+                                i <= Model.TotalPages;
+                                i++)
+                            {
+                                if (i == Model.CurrentPage)
+                                {
+                                    <li class="page-item active">
+
+                                        <span class="page-link">
+                                            @i
+                                        </span>
+
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li class="page-item">
+
+                                        <a class="page-link"
+                                           href="@Url.Action(
+                                       "Index",
+                                       "Product",
+                                       new
+                                       {
+                                           page = i,
+
+                                           pageSize =
+                                               Model.PageSize,
+
+                                           searchText =
+                                               ViewBag.SearchText
+                                       })">
+
+                                            @i
+
+                                        </a>
+
+                                    </li>
+                                }
+                            }
+
+
+                            <!-- Next -->
+                            @if (Model.CurrentPage <
+                                Model.TotalPages)
+                            {
+                                <li class="page-item">
+
+                                    <a class="page-link"
+                                       href="@Url.Action(
+                                   "Index",
+                                   "Product",
+                                   new
+                                   {
+                                       page =
+                                           Model.CurrentPage + 1,
+
+                                       pageSize =
+                                           Model.PageSize,
+
+                                       searchText =
+                                           ViewBag.SearchText
+                                   })">
+
+                                        Next &raquo;
+
+                                    </a>
+
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="page-item disabled">
+
+                                    <span class="page-link">
+                                        Next &raquo;
+                                    </span>
+
+                                </li>
+                            }
+
+                        </ul>
+
+                    </div>
+
+                </div>
+            }
+
         </div>
-
-    </div>
-
-</div>
