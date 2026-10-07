@@ -19,11 +19,11 @@ namespace Sales_Billing_System.Repositories
             _context = new SalesBillingDbContext();
         }
 
-        // Get List of all products ordered by ProductId descending
+        // Get List of all products ordered by ProductId Ascending
         public List<Product_Master> GetAllProducts()
         {
             return _context.Products
-                            .OrderBy(p => p.ProductName)
+                            .OrderBy(p => p.ProductId)
                             .ToList();
         }
 
@@ -99,9 +99,9 @@ namespace Sales_Billing_System.Repositories
         }
 
         public PagedResult<Product_Master> GetProductsPaged(
-    int pageNumber,
-    int pageSize,
-    string searchText)
+            int pageNumber,
+            int pageSize,
+            string searchText)
         {
             var result = new PagedResult<Product_Master>();
 

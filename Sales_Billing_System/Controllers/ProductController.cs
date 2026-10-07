@@ -16,11 +16,10 @@ namespace Sales_Billing_System.Controllers
         }
 
         // Product Listing
-
         public ActionResult Index(
-        string searchText,
-        int page = 1,
-        int pageSize = 10)
+            string searchText,
+            int page = 1,
+            int pageSize = 10)
         {
             var result = _productService.GetProductsPaged(
                 page,
@@ -33,51 +32,42 @@ namespace Sales_Billing_System.Controllers
             return View(result);
         }
 
-        //public ActionResult Index(string searchText)
-        //{
-        //    var products = string.IsNullOrWhiteSpace(searchText)
-        //        ? _productService.GetAllProducts()
-        //        : _productService.SearchProduct(searchText);
-
-        //    ViewBag.SearchText = searchText;
-
-        //    return View(products);
-        //}
-
-        // Create Product - GET
+        // Create Product - GET (loads into modal)
         [HttpGet]
         public ActionResult Create()
         {
-            return View();
+            return PartialView(new Product_Master());
         }
 
-        // Create Product - POST
+        // Create Product - POST (AJAX)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Create(Product_Master product)
         {
             if (!ModelState.IsValid)
             {
-                return View(product);
+                return PartialView(product);
             }
 
             try
             {
                 _productService.AddProduct(product);
 
-                TempData["SuccessMessage"] = "Product added successfully.";
-
-                return RedirectToAction("Index");
+                return Json(new
+                {
+                    success = true,
+                    message = "Product added successfully."
+                });
             }
             catch (Exception ex)
             {
                 ModelState.AddModelError("", ex.Message);
 
-                return View(product);
+                return PartialView(product);
             }
         }
 
-        // Edit Product - GET
+        // Edit Product - GET (loads into modal)
         [HttpGet]
         public ActionResult Edit(int id)
         {
@@ -88,36 +78,52 @@ namespace Sales_Billing_System.Controllers
                 return HttpNotFound();
             }
 
-            return View(product);
+            return PartialView(product);
         }
 
-        // Edit Product - POST
+        // Edit Product - POST (AJAX)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Edit(Product_Master product)
         {
             if (!ModelState.IsValid)
             {
-                return View(product);
+                return PartialView(product);
             }
 
             try
             {
                 _productService.UpdateProduct(product);
 
-                TempData["SuccessMessage"] = "Product updated successfully.";
-
-                return RedirectToAction("Index");
+                return Json(new
+                {
+                    success = true,
+                    message = "Product updated successfully."
+                });
             }
             catch (Exception ex)
             {
                 ModelState.AddModelError("", ex.Message);
 
-                return View(product);
+                return PartialView(product);
             }
         }
 
-        // Activate / Deactivate Product
+        // Activate / Deactivate - confirmation modal (GET)
+        [HttpGet]
+        public ActionResult ConfirmToggleStatus(int id)
+        {
+            var product = _productService.GetProductById(id);
+
+            if (product == null)
+            {
+                return HttpNotFound();
+            }
+
+            return PartialView(product);
+        }
+
+        // Activate / Deactivate - POST (AJAX)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult ToggleStatus(int id)
@@ -126,17 +132,20 @@ namespace Sales_Billing_System.Controllers
             {
                 _productService.ToggleStatus(id);
 
-                TempData["SuccessMessage"] =
-                    "Product status updated successfully.";
+                return Json(new
+                {
+                    success = true,
+                    message = "Product status updated successfully."
+                });
             }
             catch (Exception ex)
             {
-                TempData["ErrorMessage"] = ex.Message;
+                return Json(new
+                {
+                    success = false,
+                    message = ex.Message
+                });
             }
-
-            return RedirectToAction("Index");
         }
-
-
     }
 }

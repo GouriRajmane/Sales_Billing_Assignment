@@ -34,21 +34,9 @@ namespace Sales_Billing_System.Controllers
 
             return View(customers);
         }
-        //public ActionResult Index(string searchText)
-        //{
-        //    ViewBag.SearchText = searchText;
 
-        //    if (string.IsNullOrWhiteSpace(searchText))
-        //    {
-        //        return View(_customerService.GetAllCustomers());
-        //    }
-
-        //    return View(
-        //        _customerService.SearchCustomers(searchText)
-        //    );
-        //}
-
-        // Customer Details
+        // Customer Details - loads into modal
+        [HttpGet]
         public ActionResult Details(int id)
         {
             Customer_Master customer =
@@ -59,34 +47,35 @@ namespace Sales_Billing_System.Controllers
                 return HttpNotFound();
             }
 
-            return View(customer);
+            return PartialView(customer);
         }
 
-        // Create Customer - GET
+        // Create Customer - GET (loads into modal)
         [HttpGet]
         public ActionResult Create()
         {
-            return View();
+            return PartialView(new Customer_Master());
         }
 
-        // Create Customer - POST
+        // Create Customer - POST (AJAX)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Create(Customer_Master customer)
         {
             if (!ModelState.IsValid)
             {
-                return View(customer);
+                return PartialView(customer);
             }
 
             try
             {
                 _customerService.AddCustomer(customer);
 
-                TempData["SuccessMessage"] =
-                    "Customer added successfully.";
-
-                return RedirectToAction("Index");
+                return Json(new
+                {
+                    success = true,
+                    message = "Customer added successfully."
+                });
             }
             catch (Exception ex)
             {
@@ -95,11 +84,11 @@ namespace Sales_Billing_System.Controllers
                     "Unable to add customer. " + ex.Message
                 );
 
-                return View(customer);
+                return PartialView(customer);
             }
         }
 
-        // Edit Customer - GET
+        // Edit Customer - GET (loads into modal)
         [HttpGet]
         public ActionResult Edit(int id)
         {
@@ -111,27 +100,28 @@ namespace Sales_Billing_System.Controllers
                 return HttpNotFound();
             }
 
-            return View(customer);
+            return PartialView(customer);
         }
 
-        // Edit Customer - POST
+        // Edit Customer - POST (AJAX)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Edit(Customer_Master customer)
         {
             if (!ModelState.IsValid)
             {
-                return View(customer);
+                return PartialView(customer);
             }
 
             try
             {
                 _customerService.UpdateCustomer(customer);
 
-                TempData["SuccessMessage"] =
-                    "Customer updated successfully.";
-
-                return RedirectToAction("Index");
+                return Json(new
+                {
+                    success = true,
+                    message = "Customer updated successfully."
+                });
             }
             catch (Exception ex)
             {
@@ -140,7 +130,7 @@ namespace Sales_Billing_System.Controllers
                     "Unable to update customer. " + ex.Message
                 );
 
-                return View(customer);
+                return PartialView(customer);
             }
         }
     }

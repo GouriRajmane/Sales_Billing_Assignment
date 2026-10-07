@@ -291,12 +291,11 @@
 
         </button>
 
-
         @Html.ActionLink(
-            "Back",
-            "Details",
+            "Back to Invoices",
+            "Index",
             "SalesInvoice",
-            new { id = Model.InvoiceId },
+            null,
             new
             {
                 @class = "btn btn-back"
