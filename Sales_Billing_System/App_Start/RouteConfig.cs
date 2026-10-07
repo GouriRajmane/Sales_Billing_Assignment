@@ -13,6 +13,13 @@ namespace Sales_Billing_System
         {
             routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
 
+            // Custom route for SalesInvoice default location
+            routes.MapRoute(
+                name: "SalesInvoiceDefault",
+                url: "SalesInvoice",
+                defaults: new { controller = "SalesInvoice", action = "Index" }
+            );
+
             routes.MapRoute(
                 name: "Default",
                 url: "{controller}/{action}/{id}",
