@@ -15,7 +15,7 @@
         </div>
         <div>
             <button type="button"
-                    class="btn btn-primary btn-modal"
+                    class="btn btn-success btn-modal"
                     data-url="@Url.Action("Create", "Product")">
                 + Add Product
             </button>
@@ -71,11 +71,11 @@
     <div id="productListContainer">
 
         <!-- Product Table -->
-        <div class="card shadow-sm">
+        @*<div class="card shadow-sm">*@
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-dark">
+                    <table class="table table-hover align-middle mb-0 table-bordered">
+                        <thead class="table-success">
                             <tr>
                                 <th>Sr. No.</th>
                                 <th>Product Name</th>
@@ -166,7 +166,7 @@
                     </table>
                 </div>
             </div>
-        </div>
+        @*</div>*@
 
         <!-- Pagination -->
         @if (Model != null && Model.TotalPages > 0)

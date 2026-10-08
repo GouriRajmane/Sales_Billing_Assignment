@@ -11,10 +11,10 @@
 {
     @Html.AntiForgeryToken()
 
-    <div class="modal-header bg-dark text-white">
+    <div class="modal-header bg-success text-white">
         <div>
             <h5 class="modal-title mb-0">Create Sales Invoice</h5>
-            <small class="text-muted">Create a new sales invoice and add multiple products.</small>
+            <small class="text-white">Create a new sales invoice and add multiple products.</small>
         </div>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
 
@@ -26,7 +26,7 @@
 
         <!-- INVOICE INFORMATION -->
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-dark text-white">
+            <div class="card-header bg-success-50 text-dark">
                 <h6 class="mb-0">Invoice Information</h6>
             </div>
             <div class="card-body">
@@ -61,9 +61,9 @@
         <!-- INVOICE ITEMS -->
         <div class="card shadow-sm mb-4">
 
-            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <div class="card-header bg-success-50 text-dark d-flex justify-content-between align-items-center">
                 <h6 class="mb-0">Invoice Items</h6>
-                <button type="button" id="addItemBtn" class="btn btn-light btn-sm">+ Add Product</button>
+                <button type="button" id="addItemBtn" class="btn btn-outline-success btn-sm">+ Add Product</button>
             </div>
 
             <div class="card-body">
@@ -122,7 +122,7 @@
                                             <input type="number"
                                                    name="Items[@i].Quantity"
                                                    class="form-control quantity"
-                                                   value="@(Model.Items[i].Quantity == 0 ? "1" : Model.Items[i].Quantity.ToString("0.##", CultureInfo.InvariantCulture))"
+                                                   value="@(Model.Items[i].Quantity == 0 ? "1" : Model.Items[i].Quantity.ToString("1", CultureInfo.InvariantCulture))"
                                                    step="1" min="1" required />
                                         </td>
 
@@ -131,7 +131,7 @@
                                                    name="Items[@i].Rate"
                                                    class="form-control rate"
                                                    value="@Model.Items[i].Rate.ToString("0.00", CultureInfo.InvariantCulture)"
-                                                   step="0.1" min="0" required />
+                                                   step="0.01" min="0" required />
                                         </td>
 
                                         <td>
@@ -224,7 +224,7 @@
 
     <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-primary" id="saveInvoiceBtn">Save Invoice</button>
+        <button type="submit" class="btn btn-success" id="saveInvoiceBtn">Save Invoice</button>
     </div>
 }
 
