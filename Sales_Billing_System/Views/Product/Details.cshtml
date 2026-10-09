@@ -1,0 +1,73 @@
+﻿@model Sales_Billing_System.Models.Product_Master
+
+<div class="modal-header bg-info text-white">
+    <div>
+        <h5 class="modal-title mb-0">Edit Product</h5>
+        <small class="text-white">View complete product's information.</small>
+    </div>
+    <button type="button"
+            class="btn-close btn-close-white"
+            data-bs-dismiss="modal"></button>
+</div>
+
+<div class="modal-body">
+
+    @Html.ValidationSummary(true, "", new { @class = "text-danger mb-3" })
+
+    <div class="row">
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label fw-bold">Product ID</label>
+            <div class="form-control bg-light">@Model.ProductId</div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label fw-bold">Product Name</label>
+            <div class="form-control bg-light">@Model.ProductName</div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label fw-bold">SKU</label>
+            <div class="form-control bg-light">@Model.SKU</div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label fw-bold">Category</label>
+            <div class="form-control bg-light">
+                @(Model.Category != null
+                    ? Model.Category.CategoryName
+                    : "N/A")
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label fw-bold">Unit</label>
+            <div class="form-control bg-light">@Model.Unit</div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label fw-bold">Selling Price</label>
+            <div class="form-control bg-light">@Model.SellingPrice</div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label fw-bold">GST Percentage</label>
+            <div class="form-control bg-light">@Model.GSTPercentage</div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal-footer">
+    <button type="button"
+            class="btn btn-warning btn-modal"
+            data-url="@Url.Action("Edit", "Product", new { id = Model.ProductId })">
+        Edit Product
+    </button>
+
+    <button type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal">
+        Close
+    </button>
+</div>

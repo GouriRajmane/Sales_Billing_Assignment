@@ -50,19 +50,8 @@ namespace Sales_Billing_System.Controllers
         {
             var units = new[]
             {
-                "Plate",
-                "Bowl",
-                "Piece",
-                "Cup",
-                "Glass",
-                "Scoop",
-                "Serving",
-                "Kg",
-                "Gram",
-                "Litre",
-                "Millilitre",
-                "Packet",
-                "Dozen"
+                "Plate", "Bowl", "Piece","Cup", "Glass", "Scoop","Serving",
+                "Kg", "Gram", "Litre", "Millilitre", "Packet", "Dozen"
             };
 
             ViewBag.Units = new SelectList(
@@ -120,6 +109,21 @@ namespace Sales_Billing_System.Controllers
 
                 return PartialView(product);
             }
+        }
+
+        // product Details - loads into modal
+        [HttpGet]
+        public ActionResult Details(int id)
+        {
+            Product_Master product =
+                _productService.GetProductById(id);
+
+            if (product == null)
+            {
+                return HttpNotFound();
+            }
+
+            return PartialView(product);
         }
 
         // Edit product - GET
