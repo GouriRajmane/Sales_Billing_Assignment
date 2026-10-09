@@ -20,6 +20,8 @@ namespace Sales_Billing_System.Data
 
         public DbSet<Sales_Invoice_Item> SalesInvoiceItems { get; set; }
 
+        public DbSet<Category_Master> Categories { get; set; }
+
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
             // Customer -> Sales Invoices
@@ -41,6 +43,13 @@ namespace Sales_Billing_System.Data
                 .HasRequired(i => i.Product)
                 .WithMany(p => p.SalesInvoiceItems)
                 .HasForeignKey(i => i.ProductId)
+                .WillCascadeOnDelete(false);
+
+            //Product -> Category
+            modelBuilder.Entity<Product_Master>()
+                .HasRequired(p => p.Category)
+                .WithMany(c => c.Products)
+                .HasForeignKey(p => p.CategoryId)
                 .WillCascadeOnDelete(false);
 
             // Decimal precision

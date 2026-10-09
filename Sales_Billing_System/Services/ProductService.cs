@@ -4,6 +4,7 @@ using Sales_Billing_System.Repositories.Interfaces;
 using Sales_Billing_System.Services.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Sales_Billing_System.Services
 {
@@ -16,25 +17,29 @@ namespace Sales_Billing_System.Services
             _productRepository = new ProductRepository();
         }
 
-        // Get all products
         public List<Product_Master> GetAllProducts()
         {
             return _productRepository.GetAllProducts();
         }
 
-        // Get product by ID
         public Product_Master GetProductById(int productId)
         {
             return _productRepository.GetProductById(productId);
         }
 
-        // Add new product
+        public List<Category_Master> GetActiveCategories()
+        {
+            return _productRepository.GetActiveCategories();
+        }
+
         public void AddProduct(Product_Master product)
         {
             if (product == null)
             {
                 throw new ArgumentNullException("product");
             }
+
+            ValidateCategory(product.CategoryId);
 
             product.CreatedAt = DateTime.Now;
             product.UpdatedAt = DateTime.Now;
@@ -43,7 +48,6 @@ namespace Sales_Billing_System.Services
             _productRepository.AddProduct(product);
         }
 
-        // Update product
         public void UpdateProduct(Product_Master product)
         {
             if (product == null)
@@ -51,15 +55,22 @@ namespace Sales_Billing_System.Services
                 throw new ArgumentNullException("product");
             }
 
+            if (_productRepository.GetProductById(product.ProductId) == null)
+            {
+                throw new Exception("Product not found.");
+            }
+
+            ValidateCategory(product.CategoryId);
+
             product.UpdatedAt = DateTime.Now;
 
             _productRepository.UpdateProduct(product);
         }
 
-        // Activate / Deactivate product
         public void ToggleStatus(int productId)
         {
-            Product_Master product = _productRepository.GetProductById(productId);
+            Product_Master product =
+                _productRepository.GetProductById(productId);
 
             if (product == null)
             {
@@ -74,31 +85,53 @@ namespace Sales_Billing_System.Services
             return _productRepository.GetActiveProducts();
         }
 
-        // Search products
         public List<Product_Master> SearchProduct(string searchText)
         {
             return _productRepository.SearchProduct(searchText);
         }
 
-        //Pagination
         public PagedResult<Product_Master> GetProductsPaged(
-        int pageNumber,
-        int pageSize,
-        string searchText)
+            int pageNumber,
+            int pageSize,
+            string searchText)
         {
             if (pageNumber < 1)
+            {
                 pageNumber = 1;
+            }
 
             if (pageSize <= 0)
+            {
                 pageSize = 10;
+            }
 
             if (pageSize > 100)
+            {
                 pageSize = 100;
+            }
 
             return _productRepository.GetProductsPaged(
                 pageNumber,
                 pageSize,
                 searchText);
+        }
+
+        private void ValidateCategory(int categoryId)
+        {
+            if (categoryId <= 0)
+            {
+                throw new Exception("Please select a category.");
+            }
+
+            bool categoryExists = _productRepository
+                .GetActiveCategories()
+                .Any(c => c.CategoryId == categoryId);
+
+            if (!categoryExists)
+            {
+                throw new Exception(
+                    "The selected category does not exist or is inactive.");
+            }
         }
     }
 }

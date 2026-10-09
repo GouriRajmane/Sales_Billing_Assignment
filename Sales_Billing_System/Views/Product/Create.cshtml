@@ -33,12 +33,23 @@
                 @Html.ValidationMessageFor(m => m.SKU, "", new { @class = "text-danger" })
             </div>
 
+
             <div class="col-md-6 mb-3">
-                @Html.LabelFor(m => m.Unit, new { @class = "form-label fw-bold" })
-                @Html.TextBoxFor(m => m.Unit,
-                    new { @class = "form-control", placeholder = "Example: Piece, Kg, Box" })
-                @Html.ValidationMessageFor(m => m.Unit, "", new { @class = "text-danger" })
+                @Html.LabelFor(m => m.CategoryId, "Category", new { @class = "form-label" })
+                @Html.DropDownListFor(m => m.CategoryId, (SelectList)ViewBag.Categories,
+                   "-- Select Category --", new { @class = "form-select", required = "required" })
+                @Html.ValidationMessageFor(m => m.CategoryId, "",
+                    new { @class = "text-danger" })
             </div>
+
+            <div class="col-md-6 mb-3">
+                @Html.LabelFor(m => m.Unit, new { @class = "form-label" })
+                @Html.DropDownListFor(m => m.Unit, (SelectList)ViewBag.Units,
+                    "-- Select Unit --", new { @class = "form-select", required = "required" })
+                @Html.ValidationMessageFor(m => m.Unit, "",
+                    new { @class = "text-danger" })
+            </div>
+
 
             <div class="col-md-6 mb-3">
                 @Html.LabelFor(m => m.SellingPrice, new { @class = "form-label fw-bold" })

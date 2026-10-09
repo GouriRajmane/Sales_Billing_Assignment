@@ -2,6 +2,7 @@
 using Sales_Billing_System.Services;
 using Sales_Billing_System.Services.Interfaces;
 using System;
+using System.Linq;
 using System.Web.Mvc;
 
 namespace Sales_Billing_System.Controllers
@@ -15,7 +16,7 @@ namespace Sales_Billing_System.Controllers
             _productService = new ProductService();
         }
 
-        // Product Listing
+        // Product listing
         public ActionResult Index(
             string searchText,
             int page = 1,
@@ -32,20 +33,71 @@ namespace Sales_Billing_System.Controllers
             return View(result);
         }
 
-        // Create Product - GET (loads into modal)
+        // Load category dropdown
+        private void PopulateCategories(int? selectedCategoryId = null)
+        {
+            var categories = _productService.GetActiveCategories();
+
+            ViewBag.Categories = new SelectList(
+                categories,
+                "CategoryId",
+                "CategoryName",
+                selectedCategoryId);
+        }
+
+
+        private void PopulateUnits(string selectedUnit = null)
+        {
+            var units = new[]
+            {
+                "Plate",
+                "Bowl",
+                "Piece",
+                "Cup",
+                "Glass",
+                "Scoop",
+                "Serving",
+                "Kg",
+                "Gram",
+                "Litre",
+                "Millilitre",
+                "Packet",
+                "Dozen"
+            };
+
+            ViewBag.Units = new SelectList(
+                units,
+                selectedUnit
+            );
+        }
+
+        // Create product - GET
         [HttpGet]
         public ActionResult Create()
         {
+            PopulateCategories();
+            PopulateUnits();
+
             return PartialView(new Product_Master());
         }
 
-        // Create Product - POST (AJAX)
+        // Create product - POST (AJAX)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Create(Product_Master product)
         {
+            if (product.CategoryId <= 0)
+            {
+                ModelState.AddModelError(
+                    "CategoryId",
+                    "Please select a category.");
+            }
+
             if (!ModelState.IsValid)
             {
+                PopulateCategories(product.CategoryId);
+                PopulateUnits(product.Unit);
+
                 return PartialView(product);
             }
 
@@ -63,31 +115,44 @@ namespace Sales_Billing_System.Controllers
             {
                 ModelState.AddModelError("", ex.Message);
 
+                PopulateCategories(product.CategoryId);
+                PopulateUnits(product.Unit);
+
                 return PartialView(product);
             }
         }
 
-        // Edit Product - GET (loads into modal)
+        // Edit product - GET
         [HttpGet]
         public ActionResult Edit(int id)
         {
             var product = _productService.GetProductById(id);
 
             if (product == null)
-            {
                 return HttpNotFound();
-            }
+
+            PopulateCategories(product.CategoryId);
+            PopulateUnits(product.Unit);
 
             return PartialView(product);
         }
 
-        // Edit Product - POST (AJAX)
+        // Edit product - POST (AJAX)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Edit(Product_Master product)
         {
+            if (product.CategoryId <= 0)
+            {
+                ModelState.AddModelError(
+                    "CategoryId",
+                    "Please select a category.");
+            }
+
             if (!ModelState.IsValid)
             {
+                PopulateCategories(product.CategoryId);
+                PopulateUnits(product.Unit);
                 return PartialView(product);
             }
 
@@ -105,11 +170,13 @@ namespace Sales_Billing_System.Controllers
             {
                 ModelState.AddModelError("", ex.Message);
 
+                PopulateCategories(product.CategoryId);
+                PopulateUnits(product.Unit);
                 return PartialView(product);
             }
         }
 
-        // Activate / Deactivate - confirmation modal (GET)
+        // Activate/deactivate confirmation modal - GET
         [HttpGet]
         public ActionResult ConfirmToggleStatus(int id)
         {
@@ -123,7 +190,7 @@ namespace Sales_Billing_System.Controllers
             return PartialView(product);
         }
 
-        // Activate / Deactivate - POST (AJAX)
+        // Activate/deactivate - POST (AJAX)
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult ToggleStatus(int id)

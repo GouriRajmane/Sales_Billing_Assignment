@@ -19,85 +19,112 @@ namespace Sales_Billing_System.Repositories
             _context = new SalesBillingDbContext();
         }
 
-        // Get List of all products ordered by ProductId Ascending
+        // Get all products with category information
         public List<Product_Master> GetAllProducts()
         {
             return _context.Products
-                            .OrderBy(p => p.ProductId)
-                            .ToList();
+                .Include(p => p.Category)
+                .OrderBy(p => p.ProductId)
+                .ToList();
         }
 
-
-        //Get product by ID
+        // Get product by ID with category information
         public Product_Master GetProductById(int productId)
         {
             return _context.Products
-                            .FirstOrDefault(p => p.ProductId == productId);
+                .Include(p => p.Category)
+                .FirstOrDefault(p => p.ProductId == productId);
+        }
+
+        // Get active categories for dropdowns
+        public List<Category_Master> GetActiveCategories()
+        {
+            return _context.Categories
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.CategoryId)
+                .ToList();
         }
 
         // Add a new product
         public void AddProduct(Product_Master product)
-        { 
+        {
             _context.Products.Add(product);
             _context.SaveChanges();
         }
 
-        // Update existing product
+        // Update an existing product
         public void UpdateProduct(Product_Master product)
         {
-            Product_Master existingProduct = GetProductById(product.ProductId);
+            Product_Master existingProduct =
+                _context.Products.FirstOrDefault(
+                    p => p.ProductId == product.ProductId);
 
-            if (existingProduct != null)
+            if (existingProduct == null)
             {
-                existingProduct.ProductName = product.ProductName;
-                existingProduct.SKU = product.SKU;
-                existingProduct.Unit = product.Unit;
-                existingProduct.SellingPrice = product.SellingPrice;
-                existingProduct.GSTPercentage = product.GSTPercentage;
-                //existingProduct.IsActive = product.IsActive;
-                existingProduct.UpdatedAt = DateTime.Now;
-
-                _context.SaveChanges();
+                throw new Exception("Product not found.");
             }
+
+            existingProduct.ProductName = product.ProductName;
+            existingProduct.SKU = product.SKU;
+            existingProduct.Unit = product.Unit;
+            existingProduct.SellingPrice = product.SellingPrice;
+            existingProduct.GSTPercentage = product.GSTPercentage;
+            existingProduct.CategoryId = product.CategoryId;
+            existingProduct.UpdatedAt = DateTime.Now;
+
+            _context.SaveChanges();
         }
 
+        // Activate or deactivate a product
         public void ToggleStatus(int productId)
         {
-            Product_Master product = GetProductById(productId);
+            Product_Master product = _context.Products
+                .FirstOrDefault(p => p.ProductId == productId);
 
-            if (product != null)
+            if (product == null)
             {
-                product.IsActive = !product.IsActive;
-                product.UpdatedAt = DateTime.Now;
-
-                _context.SaveChanges();
+                throw new Exception("Product not found.");
             }
+
+            product.IsActive = !product.IsActive;
+            product.UpdatedAt = DateTime.Now;
+
+            _context.SaveChanges();
         }
 
+        // Get active products
         public List<Product_Master> GetActiveProducts()
         {
             return _context.Products
-                           .Where(p => p.IsActive)
-                           .OrderBy(p => p.ProductName)
-                           .ToList();
+                .Include(p => p.Category)
+                .Where(p => p.IsActive)
+                .OrderBy(p => p.ProductName)
+                .ToList();
         }
 
         // Search products
         public List<Product_Master> SearchProduct(string searchText)
         {
-            if (string.IsNullOrWhiteSpace(searchText))
-            { 
-                return GetAllProducts();
+            var query = _context.Products
+                .Include(p => p.Category)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                searchText = searchText.Trim();
+
+                query = query.Where(p =>
+                    p.ProductName.Contains(searchText) ||
+                    (p.SKU != null && p.SKU.Contains(searchText)) ||
+                    (p.Category != null && p.Category.CategoryName.Contains(searchText)));
             }
 
-            return _context.Products
-                            .Where(p =>
-                            p.ProductName.Contains(searchText) || 
-                            (p.SKU!= null && p.SKU.Contains(searchText)))
-                            .OrderByDescending(p => p.ProductId)
-                            .ToList();
+            return query
+                .OrderByDescending(p => p.ProductId)
+                .ToList();
         }
 
+        // Pagination through MySQL stored procedure
         public PagedResult<Product_Master> GetProductsPaged(
             int pageNumber,
             int pageSize,
@@ -122,12 +149,10 @@ namespace Sales_Billing_System.Repositories
                     command.CommandType = CommandType.StoredProcedure;
 
                     command.Parameters.AddWithValue(
-                        "@p_PageNumber",
-                        pageNumber);
+                        "@p_PageNumber", pageNumber);
 
                     command.Parameters.AddWithValue(
-                        "@p_PageSize",
-                        pageSize);
+                        "@p_PageSize", pageSize);
 
                     command.Parameters.AddWithValue(
                         "@p_SearchText",
@@ -137,10 +162,7 @@ namespace Sales_Billing_System.Repositories
 
                     using (var reader = command.ExecuteReader())
                     {
-                        // ==============================
-                        // RESULT SET 1 - PRODUCTS
-                        // ==============================
-
+                        // Result set 1: Products
                         while (reader.Read())
                         {
                             var product = new Product_Master
@@ -171,22 +193,43 @@ namespace Sales_Billing_System.Repositories
                                         reader["GSTPercentage"]),
 
                                 IsActive = reader["IsActive"] != DBNull.Value &&
-                                           Convert.ToBoolean(
-                                               reader["IsActive"])
+                                    Convert.ToBoolean(reader["IsActive"])
                             };
+
+                            // These fields must be returned by the updated SP.
+                            int categoryIdOrdinal =
+                                GetOrdinalIfExists(reader, "CategoryId");
+
+                            int categoryNameOrdinal =
+                                GetOrdinalIfExists(reader, "CategoryName");
+
+                            if (categoryIdOrdinal >= 0 &&
+                                reader.IsDBNull(categoryIdOrdinal) == false)
+                            {
+                                product.CategoryId =
+                                    Convert.ToInt32(reader.GetValue(
+                                        categoryIdOrdinal));
+                            }
+
+                            if (categoryNameOrdinal >= 0 &&
+                                reader.IsDBNull(categoryNameOrdinal) == false)
+                            {
+                                product.Category = new Category_Master
+                                {
+                                    CategoryId = product.CategoryId,
+                                    CategoryName = reader.GetString(
+                                        categoryNameOrdinal)
+                                };
+                            }
 
                             result.Items.Add(product);
                         }
 
-                        // ==============================
-                        // RESULT SET 2 - TOTAL COUNT
-                        // ==============================
-
+                        // Result set 2: Total record count
                         if (reader.NextResult() && reader.Read())
                         {
-                            result.TotalRecords =
-                                Convert.ToInt32(
-                                    reader["TotalRecords"]);
+                            result.TotalRecords = Convert.ToInt32(
+                                reader["TotalRecords"]);
                         }
                     }
                 }
@@ -195,6 +238,22 @@ namespace Sales_Billing_System.Repositories
             return result;
         }
 
+        private int GetOrdinalIfExists(
+            IDataRecord reader,
+            string columnName)
+        {
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                if (string.Equals(
+                    reader.GetName(i),
+                    columnName,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    return i;
+                }
+            }
 
+            return -1;
+        }
     }
 }

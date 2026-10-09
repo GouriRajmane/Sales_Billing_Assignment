@@ -1,8 +1,5 @@
 ﻿using Sales_Billing_System.Models;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 
 namespace Sales_Billing_System.Services.Interfaces
 {
@@ -26,5 +23,8 @@ namespace Sales_Billing_System.Services.Interfaces
             int pageNumber,
             int pageSize,
             string searchText);
+
+        // Retrieve active categories for Product forms
+        List<Category_Master> GetActiveCategories();
     }
 }
