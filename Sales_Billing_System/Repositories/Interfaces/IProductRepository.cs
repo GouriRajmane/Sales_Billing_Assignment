@@ -24,7 +24,9 @@ namespace Sales_Billing_System.Repositories.Interfaces
             int pageSize,
             string searchText);
 
-        // Get active categories for Product Create/Edit dropdowns
         List<Category_Master> GetActiveCategories();
+
+        List<SubCategory_Master> GetActiveSubCategoriesByCategoryId(
+            int categoryId);
     }
 }

@@ -32,6 +32,23 @@ namespace Sales_Billing_System.Services
             return _productRepository.GetActiveCategories();
         }
 
+           // Retrieve active subcategories for the selected category.
+        public List<SubCategory_Master> GetActiveSubCategoriesByCategoryId(
+            int categoryId)
+        {
+            if (categoryId <= 0)
+            {
+                return new List<SubCategory_Master>();
+            }
+
+            ValidateCategory(categoryId);
+
+            return (List<SubCategory_Master>)_productRepository
+                .GetActiveSubCategoriesByCategoryId(categoryId);
+
+
+        }
+
         public void AddProduct(Product_Master product)
         {
             if (product == null)
@@ -40,6 +57,7 @@ namespace Sales_Billing_System.Services
             }
 
             ValidateCategory(product.CategoryId);
+            ValidateSubCategory(product.CategoryId, product.SubCategoryId);
 
             product.CreatedAt = DateTime.Now;
             product.UpdatedAt = DateTime.Now;
@@ -61,6 +79,7 @@ namespace Sales_Billing_System.Services
             }
 
             ValidateCategory(product.CategoryId);
+            ValidateSubCategory(product.CategoryId, product.SubCategoryId);
 
             product.UpdatedAt = DateTime.Now;
 
@@ -131,6 +150,27 @@ namespace Sales_Billing_System.Services
             {
                 throw new Exception(
                     "The selected category does not exist or is inactive.");
+            }
+        }
+
+        private void ValidateSubCategory(
+         int categoryId,
+         int subCategoryId)
+        {
+            if (subCategoryId <= 0)
+            {
+                throw new Exception("Please select a subcategory.");
+            }
+
+            bool subCategoryExists = _productRepository
+                .GetActiveSubCategoriesByCategoryId(categoryId)
+                .Any(sc => sc.SubCategoryId == subCategoryId);
+
+            if (!subCategoryExists)
+            {
+                throw new Exception(
+                    "The selected subcategory is inactive, does not exist, " +
+                    "or does not belong to the selected category.");
             }
         }
     }

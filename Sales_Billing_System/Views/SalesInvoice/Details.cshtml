@@ -128,14 +128,15 @@
                 class="btn btn-danger btn-modal"
                 data-size="modal-md"
                 data-url="@Url.Action("ConfirmCancel", "SalesInvoice", new { id = Model.InvoiceId })">
+            <i class="bi bi-x-circle me-1"></i>
             Cancel Invoice
         </button>
     }
 
     @Html.ActionLink("Print Invoice", "Print", "SalesInvoice",
         new { id = Model.InvoiceId },
-        new { @class = "btn btn-secondary", target = "_blank" })
+        new { @class = "btn btn-primary", target = "_blank"})
 
-    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 
 </div>

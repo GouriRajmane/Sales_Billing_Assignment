@@ -26,5 +26,9 @@ namespace Sales_Billing_System.Services.Interfaces
 
         // Retrieve active categories for Product forms
         List<Category_Master> GetActiveCategories();
+
+        // Retrieve active subcategories for Product forms
+        List<SubCategory_Master> GetActiveSubCategoriesByCategoryId(int categoryId);
+
     }
 }

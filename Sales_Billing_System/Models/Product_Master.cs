@@ -43,16 +43,22 @@ namespace Sales_Billing_System.Models
         [Required]
         public int CategoryId { get; set; }
 
-        // Many Products -> One Category
         public virtual Category_Master Category { get; set; }
 
-        // One Product -> Many Invoice Items
+        // Foreign key to SubCategory_Master
+        [Required]
+        public int SubCategoryId { get; set; }
+
+        public virtual SubCategory_Master SubCategory { get; set; }
+
+        // One product can appear in many invoice items
         public virtual ICollection<Sales_Invoice_Item> SalesInvoiceItems { get; set; }
 
         public Product_Master()
         {
             CreatedAt = DateTime.Now;
             UpdatedAt = DateTime.Now;
+            IsActive = true;
             SalesInvoiceItems = new List<Sales_Invoice_Item>();
         }
     }

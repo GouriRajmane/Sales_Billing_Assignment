@@ -22,8 +22,21 @@ namespace Sales_Billing_System.Data
 
         public DbSet<Category_Master> Categories { get; set; }
 
+        public DbSet<SubCategory_Master> SubCategories { get; set; }
+
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
+            // Map subcategories to the existing MySQL table
+            modelBuilder.Entity<SubCategory_Master>()
+                .ToTable("SubCategory_Master");
+
+            // Category -> Subcategories
+            modelBuilder.Entity<SubCategory_Master>()
+                .HasRequired(sc => sc.Category)
+                .WithMany()
+                .HasForeignKey(sc => sc.CategoryId)
+                .WillCascadeOnDelete(false);
+
             // Customer -> Sales Invoices
             modelBuilder.Entity<Sales_Invoice>()
                 .HasRequired(i => i.Customer)
@@ -45,14 +58,21 @@ namespace Sales_Billing_System.Data
                 .HasForeignKey(i => i.ProductId)
                 .WillCascadeOnDelete(false);
 
-            //Product -> Category
+            // Category -> Products
             modelBuilder.Entity<Product_Master>()
                 .HasRequired(p => p.Category)
                 .WithMany(c => c.Products)
                 .HasForeignKey(p => p.CategoryId)
                 .WillCascadeOnDelete(false);
 
-            // Decimal precision
+            // Subcategory -> Products
+            modelBuilder.Entity<Product_Master>()
+                .HasRequired(p => p.SubCategory)
+                .WithMany(sc => sc.Products)
+                .HasForeignKey(p => p.SubCategoryId)
+                .WillCascadeOnDelete(false);
+
+            // Product decimal precision
             modelBuilder.Entity<Product_Master>()
                 .Property(p => p.SellingPrice)
                 .HasPrecision(18, 2);
@@ -61,6 +81,7 @@ namespace Sales_Billing_System.Data
                 .Property(p => p.GSTPercentage)
                 .HasPrecision(5, 2);
 
+            // Invoice decimal precision
             modelBuilder.Entity<Sales_Invoice>()
                 .Property(i => i.TotalTaxableAmount)
                 .HasPrecision(18, 2);
@@ -73,6 +94,7 @@ namespace Sales_Billing_System.Data
                 .Property(i => i.GrandTotal)
                 .HasPrecision(18, 2);
 
+            // Invoice item decimal precision
             modelBuilder.Entity<Sales_Invoice_Item>()
                 .Property(i => i.Quantity)
                 .HasPrecision(18, 2);

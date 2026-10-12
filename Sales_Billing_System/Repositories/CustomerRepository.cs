@@ -69,8 +69,8 @@ namespace Sales_Billing_System.Repositories
                            .Where(c =>
                                c.CustomerName.Contains(searchText) ||
                                c.MobileNumber.Contains(searchText) ||
-                               (c.GSTIN != null &&
-                                c.GSTIN.Contains(searchText)))
+                               (c.GSTIN != null &&  c.GSTIN.Contains(searchText)) ||
+                               c.Address.Contains(searchText))
                            .OrderByDescending(c => c.CustomerId)
                            .ToList();
         }
