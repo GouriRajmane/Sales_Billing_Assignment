@@ -31,5 +31,9 @@ namespace Sales_Billing_System.Repositories.Interfaces
             string searchText,
             DateTime? fromDate,
             DateTime? toDate);
+
+        List<Customer_Master> SearchCustomers(string term);
+
+        List<Product_Master> SearchProducts(string term);
     }
 }

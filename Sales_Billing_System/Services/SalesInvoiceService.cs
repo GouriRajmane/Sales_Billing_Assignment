@@ -474,6 +474,16 @@ namespace Sales_Billing_System.Services
                 invoiceId
             );
         }
+        //--------------------------------------------------------------
+        public List<Customer_Master> SearchCustomers(string term)
+        {
+            return _invoiceRepository.SearchCustomers(term);
+        }
+
+        public List<Product_Master> SearchProducts(string term)
+        {
+            return _invoiceRepository.SearchProducts(term);
+        }
 
 
         // ============================================================

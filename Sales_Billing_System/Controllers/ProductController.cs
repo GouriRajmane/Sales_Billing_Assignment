@@ -11,6 +11,13 @@ namespace Sales_Billing_System.Controllers
     {
         private readonly IProductService _productService;
 
+        // Fixed list of units, searched as the user types.
+        private static readonly string[] Units =
+        {
+            "Plate", "Bowl", "Piece", "Cup", "Glass", "Scoop", "Serving",
+            "Kg", "Gram", "Litre", "Millilitre", "Packet", "Dozen"
+        };
+
         public ProductController()
         {
             _productService = new ProductService();
@@ -43,119 +50,48 @@ namespace Sales_Billing_System.Controllers
             return View(result);
         }
 
-        // =====================================================
-        // CATEGORY DROPDOWN
-        // =====================================================
 
-        private void PopulateCategories(int? selectedCategoryId = null)
-        {
-            var categories = _productService.GetActiveCategories();
-
-            ViewBag.Categories = new SelectList(
-                categories,
-                "CategoryId",
-                "CategoryName",
-                selectedCategoryId);
-        }
 
         // =====================================================
-        // SUBCATEGORY DROPDOWN
-        // =====================================================
-
-        private void PopulateSubCategories(
-            int? categoryId = null,
-            int? selectedSubCategoryId = null)
-        {
-            // Always provide a list so the Razor view never
-            // receives a null ViewBag.SubCategories value.
-            var subCategories = Enumerable.Empty<SubCategory_Master>();
-
-            if (categoryId.HasValue && categoryId.Value > 0)
-            {
-                subCategories =
-                    _productService.GetActiveSubCategoriesByCategoryId(
-                        categoryId.Value);
-            }
-
-            // Only select a subcategory belonging to this category.
-            if (!selectedSubCategoryId.HasValue ||
-                !subCategories.Any(s =>
-                    s.SubCategoryId == selectedSubCategoryId.Value))
-            {
-                selectedSubCategoryId = null;
-            }
-
-            ViewBag.SubCategories = new SelectList(
-                subCategories,
-                "SubCategoryId",
-                "SubCategoryName",
-                selectedSubCategoryId);
-        }
-
-        // =====================================================
-        // UNIT DROPDOWN
-        // =====================================================
-
-        private void PopulateUnits(string selectedUnit = null)
-        {
-            var units = new[]
-            {
-                "Plate",
-                "Bowl",
-                "Piece",
-                "Cup",
-                "Glass",
-                "Scoop",
-                "Serving",
-                "Kg",
-                "Gram",
-                "Litre",
-                "Millilitre",
-                "Packet",
-                "Dozen"
-            };
-
-            ViewBag.Units = new SelectList(units, selectedUnit);
-        }
-
-        // Populate all dropdowns whenever a form is displayed.
-        private void PopulateProductDropdowns(
-            int? categoryId = null,
-            int? subCategoryId = null,
-            string selectedUnit = null)
-        {
-            PopulateCategories(categoryId);
-            PopulateSubCategories(categoryId, subCategoryId);
-            PopulateUnits(selectedUnit);
-        }
-
-        // =====================================================
-        // AJAX: GET SUBCATEGORIES BY CATEGORY
+        // LAZY-LOAD DROPDOWN SEARCH (returns { results: [{id, text}] })
         // =====================================================
 
         [HttpGet]
-        public JsonResult GetSubCategoriesByCategory(int categoryId)
+        public JsonResult SearchCategories(string term)
         {
-            if (categoryId <= 0)
-            {
-                return Json(
-                    new object[0],
-                    JsonRequestBehavior.AllowGet);
-            }
-
-            var subCategories =
-                _productService.GetActiveSubCategoriesByCategoryId(
-                    categoryId);
-
-            var result = subCategories
-                .Select(s => new
-                {
-                    Value = s.SubCategoryId,
-                    Text = s.SubCategoryName
-                })
+            var results = _productService
+                .SearchCategories(term)
+                .Select(c => new { id = c.CategoryId, text = c.CategoryName })
                 .ToList();
 
-            return Json(result, JsonRequestBehavior.AllowGet);
+            return Json(new { results }, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult SearchSubCategories(int categoryId, string term)
+        {
+            var results = _productService
+                .SearchSubCategories(categoryId, term)
+                .Select(s => new { id = s.SubCategoryId, text = s.SubCategoryName })
+                .ToList();
+
+            return Json(new { results }, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpGet]
+        public JsonResult SearchUnits(string term)
+        {
+            term = (term ?? "").Trim();
+
+            var results = term.Length == 0
+                ? new object[0]
+                : Units
+                    .Where(u => u.IndexOf(
+                        term, StringComparison.OrdinalIgnoreCase) >= 0)
+                    .Select(u => (object)new { id = u, text = u })
+                    .ToArray();
+
+            return Json(new { results }, JsonRequestBehavior.AllowGet);
         }
 
         // =====================================================
@@ -165,8 +101,6 @@ namespace Sales_Billing_System.Controllers
         [HttpGet]
         public ActionResult Create()
         {
-            PopulateProductDropdowns();
-
             return PartialView(new Product_Master());
         }
 
@@ -178,27 +112,11 @@ namespace Sales_Billing_System.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Create(Product_Master product)
         {
-            if (Convert.ToInt32(product.CategoryId) <= 0)
-            {
-                ModelState.AddModelError(
-                    "CategoryId",
-                    "Please select a category.");
-            }
-
-            if (Convert.ToInt32(product.SubCategoryId) <= 0)
-            {
-                ModelState.AddModelError(
-                    "SubCategoryId",
-                    "Please select a subcategory.");
-            }
+            ValidateDropdowns(product);
 
             if (!ModelState.IsValid)
             {
-                PopulateProductDropdowns(
-                    Convert.ToInt32(product.CategoryId),
-                    Convert.ToInt32(product.SubCategoryId),
-                    product.Unit);
-
+                LoadSelectedNames(product);
                 return PartialView(product);
             }
 
@@ -216,11 +134,7 @@ namespace Sales_Billing_System.Controllers
             {
                 ModelState.AddModelError("", ex.Message);
 
-                PopulateProductDropdowns(
-                    Convert.ToInt32(product.CategoryId),
-                    Convert.ToInt32(product.SubCategoryId),
-                    product.Unit);
-
+                LoadSelectedNames(product);
                 return PartialView(product);
             }
         }
@@ -252,10 +166,7 @@ namespace Sales_Billing_System.Controllers
             if (product == null)
                 return HttpNotFound();
 
-            PopulateProductDropdowns(
-                Convert.ToInt32(product.CategoryId),
-                Convert.ToInt32(product.SubCategoryId),
-                product.Unit);
+            LoadSelectedNames(product);
 
             return PartialView(product);
         }
@@ -268,34 +179,16 @@ namespace Sales_Billing_System.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Edit(Product_Master product)
         {
-            if (Convert.ToInt32(product.ProductId) <= 0)
+            if (product.ProductId <= 0)
             {
-                ModelState.AddModelError(
-                    "ProductId",
-                    "Invalid product ID.");
+                ModelState.AddModelError("ProductId", "Invalid product ID.");
             }
 
-            if (Convert.ToInt32(product.CategoryId) <= 0)
-            {
-                ModelState.AddModelError(
-                    "CategoryId",
-                    "Please select a category.");
-            }
-
-            if (Convert.ToInt32(product.SubCategoryId) <= 0)
-            {
-                ModelState.AddModelError(
-                    "SubCategoryId",
-                    "Please select a subcategory.");
-            }
+            ValidateDropdowns(product);
 
             if (!ModelState.IsValid)
             {
-                PopulateProductDropdowns(
-                    Convert.ToInt32(product.CategoryId),
-                    Convert.ToInt32(product.SubCategoryId),
-                    product.Unit);
-
+                LoadSelectedNames(product);
                 return PartialView(product);
             }
 
@@ -313,11 +206,7 @@ namespace Sales_Billing_System.Controllers
             {
                 ModelState.AddModelError("", ex.Message);
 
-                PopulateProductDropdowns(
-                    Convert.ToInt32(product.CategoryId),
-                    Convert.ToInt32(product.SubCategoryId),
-                    product.Unit);
-
+                LoadSelectedNames(product);
                 return PartialView(product);
             }
         }
@@ -363,6 +252,52 @@ namespace Sales_Billing_System.Controllers
                     message = ex.Message
                 });
             }
+        }
+
+        // =====================================================
+        // HELPERS
+        // =====================================================
+
+        // Category, subcategory and unit must be chosen from the search results.
+        private void ValidateDropdowns(Product_Master product)
+        {
+            if (product.CategoryId <= 0)
+            {
+                ModelState.AddModelError(
+                    "CategoryId", "Please select a category.");
+            }
+
+            if (product.SubCategoryId <= 0)
+            {
+                ModelState.AddModelError(
+                    "SubCategoryId", "Please select a subcategory.");
+            }
+
+            if (string.IsNullOrWhiteSpace(product.Unit) ||
+                !Units.Contains(product.Unit))
+            {
+                ModelState.AddModelError(
+                    "Unit", "Please select a unit.");
+            }
+        }
+
+        // The dropdowns start empty, so the form needs the selected names
+        // to show the current choice (Edit, or Create/Edit after an error).
+        private void LoadSelectedNames(Product_Master product)
+        {
+            var category = product.CategoryId > 0
+                ? _productService.GetCategoryById(product.CategoryId)
+                : null;
+
+            var subCategory = product.SubCategoryId > 0
+                ? _productService.GetSubCategoryById(product.SubCategoryId)
+                : null;
+
+            ViewBag.SelectedCategoryName =
+                category != null ? category.CategoryName : null;
+
+            ViewBag.SelectedSubCategoryName =
+                subCategory != null ? subCategory.SubCategoryName : null;
         }
     }
 }

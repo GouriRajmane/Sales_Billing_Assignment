@@ -4,7 +4,6 @@ using Sales_Billing_System.Repositories.Interfaces;
 using Sales_Billing_System.Services.Interfaces;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Sales_Billing_System.Services
 {
@@ -27,26 +26,42 @@ namespace Sales_Billing_System.Services
             return _productRepository.GetProductById(productId);
         }
 
-        public List<Category_Master> GetActiveCategories()
+        // Nothing is returned until the user types something.
+        public List<Category_Master> SearchCategories(string term)
         {
-            return _productRepository.GetActiveCategories();
+            term = (term ?? "").Trim();
+
+            if (term.Length == 0)
+            {
+                return new List<Category_Master>();
+            }
+
+            return _productRepository.SearchCategories(term);
         }
 
-           // Retrieve active subcategories for the selected category.
-        public List<SubCategory_Master> GetActiveSubCategoriesByCategoryId(
-            int categoryId)
+        // Nothing is returned until a category is chosen and the user types.
+        public List<SubCategory_Master> SearchSubCategories(
+            int categoryId,
+            string term)
         {
-            if (categoryId <= 0)
+            term = (term ?? "").Trim();
+
+            if (categoryId <= 0 || term.Length == 0)
             {
                 return new List<SubCategory_Master>();
             }
 
-            ValidateCategory(categoryId);
+            return _productRepository.SearchSubCategories(categoryId, term);
+        }
 
-            return (List<SubCategory_Master>)_productRepository
-                .GetActiveSubCategoriesByCategoryId(categoryId);
+        public Category_Master GetCategoryById(int categoryId)
+        {
+            return _productRepository.GetCategoryById(categoryId);
+        }
 
-
+        public SubCategory_Master GetSubCategoryById(int subCategoryId)
+        {
+            return _productRepository.GetSubCategoryById(subCategoryId);
         }
 
         public void AddProduct(Product_Master product)
@@ -56,8 +71,9 @@ namespace Sales_Billing_System.Services
                 throw new ArgumentNullException("product");
             }
 
-            ValidateCategory(product.CategoryId);
-            ValidateSubCategory(product.CategoryId, product.SubCategoryId);
+            ValidateCategoryAndSubCategory(
+                product.CategoryId,
+                product.SubCategoryId);
 
             product.CreatedAt = DateTime.Now;
             product.UpdatedAt = DateTime.Now;
@@ -78,8 +94,9 @@ namespace Sales_Billing_System.Services
                 throw new Exception("Product not found.");
             }
 
-            ValidateCategory(product.CategoryId);
-            ValidateSubCategory(product.CategoryId, product.SubCategoryId);
+            ValidateCategoryAndSubCategory(
+                product.CategoryId,
+                product.SubCategoryId);
 
             product.UpdatedAt = DateTime.Now;
 
@@ -88,10 +105,7 @@ namespace Sales_Billing_System.Services
 
         public void ToggleStatus(int productId)
         {
-            Product_Master product =
-                _productRepository.GetProductById(productId);
-
-            if (product == null)
+            if (_productRepository.GetProductById(productId) == null)
             {
                 throw new Exception("Product not found.");
             }
@@ -135,42 +149,35 @@ namespace Sales_Billing_System.Services
                 searchText);
         }
 
-        private void ValidateCategory(int categoryId)
+        // Category and subcategory must exist, be active,
+        // and the subcategory must belong to the category.
+        private void ValidateCategoryAndSubCategory(
+            int categoryId,
+            int subCategoryId)
         {
-            if (categoryId <= 0)
-            {
-                throw new Exception("Please select a category.");
-            }
+            Category_Master category =
+                categoryId > 0
+                    ? _productRepository.GetCategoryById(categoryId)
+                    : null;
 
-            bool categoryExists = _productRepository
-                .GetActiveCategories()
-                .Any(c => c.CategoryId == categoryId);
-
-            if (!categoryExists)
+            if (category == null || !category.IsActive)
             {
                 throw new Exception(
-                    "The selected category does not exist or is inactive.");
-            }
-        }
-
-        private void ValidateSubCategory(
-         int categoryId,
-         int subCategoryId)
-        {
-            if (subCategoryId <= 0)
-            {
-                throw new Exception("Please select a subcategory.");
+                    "Please select a valid active category.");
             }
 
-            bool subCategoryExists = _productRepository
-                .GetActiveSubCategoriesByCategoryId(categoryId)
-                .Any(sc => sc.SubCategoryId == subCategoryId);
+            SubCategory_Master subCategory =
+                subCategoryId > 0
+                    ? _productRepository.GetSubCategoryById(subCategoryId)
+                    : null;
 
-            if (!subCategoryExists)
+            if (subCategory == null ||
+                !subCategory.IsActive ||
+                subCategory.CategoryId != categoryId)
             {
                 throw new Exception(
-                    "The selected subcategory is inactive, does not exist, " +
-                    "or does not belong to the selected category.");
+                    "Please select a valid active subcategory " +
+                    "for the selected category.");
             }
         }
     }

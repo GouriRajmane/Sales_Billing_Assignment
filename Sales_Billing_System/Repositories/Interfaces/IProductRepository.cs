@@ -24,9 +24,16 @@ namespace Sales_Billing_System.Repositories.Interfaces
             int pageSize,
             string searchText);
 
-        List<Category_Master> GetActiveCategories();
+        // Lazy-load dropdown search
+        List<Category_Master> SearchCategories(string term);
 
-        List<SubCategory_Master> GetActiveSubCategoriesByCategoryId(
-            int categoryId);
+        List<SubCategory_Master> SearchSubCategories(
+            int categoryId,
+            string term);
+
+        // Lookups used for validation and for showing the selected item
+        Category_Master GetCategoryById(int categoryId);
+
+        SubCategory_Master GetSubCategoryById(int subCategoryId);
     }
 }

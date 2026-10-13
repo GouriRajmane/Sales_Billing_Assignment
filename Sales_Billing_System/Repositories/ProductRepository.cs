@@ -12,6 +12,8 @@ namespace Sales_Billing_System.Repositories
 {
     public class ProductRepository : IProductRepository
     {
+        private const int MaxDropdownResults = 20;
+
         private readonly SalesBillingDbContext _context;
 
         public ProductRepository()
@@ -38,28 +40,45 @@ namespace Sales_Billing_System.Repositories
                 .FirstOrDefault(p => p.ProductId == productId);
         }
 
-        // Get active categories for dropdowns.
-        public List<Category_Master> GetActiveCategories()
+        // Search active categories by name (lazy-load dropdown).
+        public List<Category_Master> SearchCategories(string term)
         {
             return _context.Categories
-                .Where(c => c.IsActive)
+                .Where(c => c.IsActive &&
+                            c.CategoryName.Contains(term))
                 .OrderBy(c => c.CategoryName)
+                .Take(MaxDropdownResults)
                 .ToList();
         }
 
-
-
-        // Get active subcategories belonging to a specific category.
-        public List<SubCategory_Master> GetActiveSubCategoriesByCategoryId(
-            int categoryId)
+        // Search active subcategories of one category by name (lazy-load dropdown).
+        public List<SubCategory_Master> SearchSubCategories(
+            int categoryId,
+            string term)
         {
             return _context.SubCategories
                 .Where(sc =>
                     sc.IsActive &&
                     sc.CategoryId == categoryId &&
-                    sc.Category.IsActive)
+                    sc.Category.IsActive &&
+                    sc.SubCategoryName.Contains(term))
                 .OrderBy(sc => sc.SubCategoryName)
+                .Take(MaxDropdownResults)
                 .ToList();
+        }
+
+        // Get one category by ID.
+        public Category_Master GetCategoryById(int categoryId)
+        {
+            return _context.Categories
+                .FirstOrDefault(c => c.CategoryId == categoryId);
+        }
+
+        // Get one subcategory by ID.
+        public SubCategory_Master GetSubCategoryById(int subCategoryId)
+        {
+            return _context.SubCategories
+                .FirstOrDefault(sc => sc.SubCategoryId == subCategoryId);
         }
 
         // Add a new product.
@@ -169,7 +188,11 @@ namespace Sales_Billing_System.Repositories
 
             using (var connection =
                 (MySqlConnection)_context.Database.Connection)
+               
+            
             {
+                bool shouldClose = connection.State != ConnectionState.Open;
+
                 if (connection.State != ConnectionState.Open)
                 {
                     connection.Open();

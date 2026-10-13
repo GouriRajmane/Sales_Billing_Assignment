@@ -9,51 +9,25 @@ namespace Sales_Billing_System.Controllers
 {
     public class SalesInvoiceController : Controller
     {
-        private readonly ISalesInvoiceService _invoiceService;
-        private readonly ICustomerService _customerService;
-        private readonly IProductService _productService;
-
-        public SalesInvoiceController()
-        {
-            _invoiceService = new SalesInvoiceService();
-            _customerService = new CustomerService();
-            _productService = new ProductService();
-        }
+        private readonly ISalesInvoiceService _invoiceService = new SalesInvoiceService();
 
         // INDEX
-        public ActionResult Index(
-            string searchText,
-            DateTime? fromDate,
-            DateTime? toDate,
-            int page = 1,
-            int pageSize = 10)
+        public ActionResult Index(string searchText, DateTime? fromDate, DateTime? toDate, int page = 1, int pageSize = 10)
         {
             ViewBag.SearchText = searchText;
             ViewBag.FromDate = fromDate;
             ViewBag.ToDate = toDate;
             ViewBag.PageSize = pageSize;
 
-            var invoices = _invoiceService.GetInvoicesPaged(
-                page,
-                pageSize,
-                searchText,
-                fromDate,
-                toDate);
-
-            return View(invoices);
+            return View(_invoiceService.GetInvoicesPaged(page, pageSize, searchText, fromDate, toDate));
         }
 
         // CREATE - GET (loads into modal)
         [HttpGet]
         public ActionResult Create()
         {
-            SalesInvoiceViewModel model = new SalesInvoiceViewModel();
-
-            model.InvoiceNumber = _invoiceService.GenerateInvoiceNumber();
+            var model = new SalesInvoiceViewModel { InvoiceNumber = _invoiceService.GenerateInvoiceNumber() };
             model.Items.Add(new Sales_Invoice_Item());
-
-            LoadDropdownData(model);
-
             return PartialView(model);
         }
 
@@ -62,75 +36,43 @@ namespace Sales_Billing_System.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult Create(SalesInvoiceViewModel model)
         {
-            if (!ModelState.IsValid)
-            {
-                LoadDropdownData(model);
-                return PartialView(model);
-            }
+            if (!ModelState.IsValid) return PartialView(model);
 
             try
             {
                 _invoiceService.CreateInvoice(model);
-
-                return Json(new
-                {
-                    success = true,
-                    message = "Invoice created successfully."
-                });
+                return Json(new { success = true, message = "Invoice created successfully." });
             }
             catch (Exception ex)
             {
-                LoadDropdownData(model);
                 ModelState.AddModelError("", ex.Message);
-
                 return PartialView(model);
             }
         }
 
-        // DETAILS (loads into modal)
+        // DETAILS (modal)
         [HttpGet]
         public ActionResult Details(int id)
         {
-            Sales_Invoice invoice = _invoiceService.GetInvoiceById(id);
-
-            if (invoice == null)
-            {
-                return HttpNotFound();
-            }
-
-            return PartialView(invoice);
+            var invoice = _invoiceService.GetInvoiceById(id);
+            return invoice == null ? (ActionResult)HttpNotFound() : PartialView(invoice);
         }
 
-        // PRINT (full page, opens in new tab)
+        // PRINT (full page, new tab)
         public ActionResult Print(int id)
         {
-            if (id <= 0)
-            {
-                return new HttpStatusCodeResult(400, "Invalid invoice ID.");
-            }
+            if (id <= 0) return new HttpStatusCodeResult(400, "Invalid invoice ID.");
 
-            Sales_Invoice invoice = _invoiceService.GetPrintInvoiceData(id);
-
-            if (invoice == null)
-            {
-                return HttpNotFound("Invoice not found.");
-            }
-
-            return View(invoice);
+            var invoice = _invoiceService.GetPrintInvoiceData(id);
+            return invoice == null ? (ActionResult)HttpNotFound("Invoice not found.") : View(invoice);
         }
 
-        // CANCEL - confirmation modal (GET)
+        // CANCEL - confirmation modal
         [HttpGet]
         public ActionResult ConfirmCancel(int id)
         {
-            Sales_Invoice invoice = _invoiceService.GetInvoiceById(id);
-
-            if (invoice == null)
-            {
-                return HttpNotFound();
-            }
-
-            return PartialView(invoice);
+            var invoice = _invoiceService.GetInvoiceById(id);
+            return invoice == null ? (ActionResult)HttpNotFound() : PartialView(invoice);
         }
 
         // CANCEL - POST (AJAX)
@@ -141,64 +83,32 @@ namespace Sales_Billing_System.Controllers
             try
             {
                 _invoiceService.CancelInvoice(id);
-
-                return Json(new
-                {
-                    success = true,
-                    message = "Invoice cancelled successfully."
-                });
+                return Json(new { success = true, message = "Invoice cancelled successfully." });
             }
             catch (Exception ex)
             {
-                return Json(new
-                {
-                    success = false,
-                    message = ex.Message
-                });
+                return Json(new { success = false, message = ex.Message });
             }
         }
 
-        // GET PRODUCT DETAILS (kept for optional AJAX use; Create view does not need it)
+        // LAZY SEARCH - CUSTOMERS  -> [{ id, text }]
         [HttpGet]
-        public JsonResult GetProductDetails(int id)
+        public JsonResult SearchCustomers(string term)
         {
-            var product = _productService.GetProductById(id);
+            var data = _invoiceService.SearchCustomers(term)
+                .Select(c => new { id = c.CustomerId, text = c.CustomerName + " (" + c.MobileNumber + ")" });
 
-            if (product == null || !product.IsActive)
-            {
-                return Json(
-                    new { success = false, message = "Product not found or inactive." },
-                    JsonRequestBehavior.AllowGet);
-            }
-
-            return Json(
-                new
-                {
-                    success = true,
-                    productId = product.ProductId,
-                    productName = product.ProductName,
-                    rate = product.SellingPrice,
-                    gstPercentage = product.GSTPercentage
-                },
-                JsonRequestBehavior.AllowGet);
+            return Json(data, JsonRequestBehavior.AllowGet);
         }
 
-        // LOAD DROPDOWN DATA
-        private void LoadDropdownData(SalesInvoiceViewModel model)
+        // LAZY SEARCH - PRODUCTS  -> [{ id, text, rate, gst }]
+        [HttpGet]
+        public JsonResult SearchProducts(string term)
         {
-            model.Customers = _customerService
-                .GetAllCustomers()
-                .Select(c => new SelectListItem
-                {
-                    Value = c.CustomerId.ToString(),
-                    Text = c.CustomerName,
-                    Selected = c.CustomerId == model.CustomerId
-                })
-                .ToList();
+            var data = _invoiceService.SearchProducts(term)
+                .Select(p => new { id = p.ProductId, text = p.ProductName, rate = p.SellingPrice, gst = p.GSTPercentage });
 
-            model.Products = _productService
-                .GetActiveProducts()
-                .ToList();
+            return Json(data, JsonRequestBehavior.AllowGet);
         }
     }
 }

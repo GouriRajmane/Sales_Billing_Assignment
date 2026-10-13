@@ -24,11 +24,16 @@ namespace Sales_Billing_System.Services.Interfaces
             int pageSize,
             string searchText);
 
-        // Retrieve active categories for Product forms
-        List<Category_Master> GetActiveCategories();
+        // Lazy-load dropdown search
+        List<Category_Master> SearchCategories(string term);
 
-        // Retrieve active subcategories for Product forms
-        List<SubCategory_Master> GetActiveSubCategoriesByCategoryId(int categoryId);
+        List<SubCategory_Master> SearchSubCategories(
+            int categoryId,
+            string term);
 
+        // Lookups used to show the selected item
+        Category_Master GetCategoryById(int categoryId);
+
+        SubCategory_Master GetSubCategoryById(int subCategoryId);
     }
 }

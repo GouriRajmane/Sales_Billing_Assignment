@@ -7,6 +7,9 @@
     ViewBag.Title = "Products";
 }
 
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
 <div class="container mt-4">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -279,6 +282,7 @@
 
 @section Scripts {
     @Scripts.Render("~/bundles/jqueryval")
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
         $(function () {
@@ -289,7 +293,52 @@
             var $dialog = $('#appModalDialog');
             var $content = $('#appModalContent');
 
-            function parseForm() {
+            // Search-as-you-type dropdowns (Category, SubCategory, Unit).
+            // Nothing is loaded until the user types.
+            function initLazySelects() {
+                $content.find('.lazy-select').each(function () {
+                    var $el = $(this);
+                    var $parent = $($el.data('parent'));
+                    var hint = $el.data('placeholder');
+
+                    $el.select2({
+                        theme: 'bootstrap-5',
+                        dropdownParent: $('#appModal'),
+                        width: '100%',
+                        placeholder: hint,
+                        minimumInputLength: 1,
+                        language: {
+                            inputTooShort: function () { return hint; },
+                            noResults: function () { return 'No matches found'; },
+                            searching: function () { return 'Searching...'; }
+                        },
+                        ajax: {
+                            url: $el.data('url'),
+                            dataType: 'json',
+                            delay: 250,
+                            data: function (params) {
+                                var d = { term: params.term };
+                                if ($parent.length) d.categoryId = $parent.val() || 0;
+                                return d;
+                            }
+                        }
+                    });
+
+                    // SubCategory depends on Category: disabled until a category
+                    // is chosen, and cleared whenever the category changes.
+                    if ($parent.length) {
+                        $el.prop('disabled', !$parent.val());
+
+                        $parent.on('change', function () {
+                            $el.empty().append('<option></option>')
+                                .prop('disabled', !$parent.val())
+                                .trigger('change');
+                        });
+                    }
+                });
+            }
+
+            function prepareForm() {
                 var $form = $content.find('form');
 
                 if ($form.length) {
@@ -298,6 +347,8 @@
 
                     $.validator.unobtrusive.parse($form);
                 }
+
+                initLazySelects();
             }
 
             function showAlert(message, type) {
@@ -343,7 +394,7 @@
                 $.get(url)
                     .done(function (html) {
                         $content.html(html);
-                        parseForm();
+                        prepareForm();
                     })
                     .fail(function () {
                         $content.html(
@@ -352,43 +403,6 @@
                             'Unable to load this page. Please try again.' +
                             '</div></div>'
                         );
-                    });
-            });
-
-            // Reload subcategories when Category changes.
-            $(document).on('change', '#CategoryId', function () {
-                var $category = $(this);
-                var categoryId = $category.val();
-                var $form = $category.closest('form');
-                var $subCategory = $form.find('#SubCategoryId');
-
-                var url = $category.attr('data-subcategory-url');
-
-                $subCategory.empty()
-                    .append($('<option>', {
-                        value: '',
-                        text: '-- Select SubCategory --'
-                    }))
-                    .prop('disabled', true);
-
-                if (!categoryId || !url) {
-                    $subCategory.prop('disabled', !categoryId);
-                    return;
-                }
-
-                $.getJSON(url, { categoryId: categoryId })
-                    .done(function (items) {
-                        $.each(items || [], function (_, item) {
-                            $subCategory.append($('<option>', {
-                                value: item.Value !== undefined ? item.Value : item.value,
-                                text: item.Text !== undefined ? item.Text : item.text
-                            }));
-                        });
-
-                        $subCategory.prop('disabled', false);
-                    })
-                    .fail(function () {
-                        showAlert('Unable to load subcategories for the selected category.', 'danger');
                     });
             });
 
@@ -403,7 +417,7 @@
                 if ($form.valid && !$form.valid()) return;
 
                 var $submitButton = $form.find('[type="submit"]');
-                var originalText = $submitButton.text();
+                var originalHtml = $submitButton.html();
 
                 $form.data('submitting', true);
                 $submitButton.prop('disabled', true).text('Please wait...');
@@ -427,7 +441,7 @@
                         } else {
                             // The server returned the partial view with validation errors.
                             $content.html(res);
-                            parseForm();
+                            prepareForm();
                         }
                     })
                     .fail(function () {
@@ -435,7 +449,7 @@
                     })
                     .always(function () {
                         $form.removeData('submitting');
-                        $submitButton.prop('disabled', false).text(originalText);
+                        $submitButton.prop('disabled', false).html(originalHtml);
                     });
             });
 

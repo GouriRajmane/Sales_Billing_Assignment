@@ -1,103 +1,41 @@
 ﻿@model Sales_Billing_System.Models.Product_Master
 
+@helper Field(string label, object value)
+{
+    <div class="col-md-6 mb-3">
+        <label class="form-label fw-bold">@label</label>
+        <div class="form-control bg-light">@value</div>
+    </div>
+}
+
 <div class="modal-header bg-info text-white">
     <div>
         <h5 class="modal-title mb-0">Product Details</h5>
         <small>Complete product information.</small>
     </div>
-
-    <button type="button"
-            class="btn-close btn-close-white"
-            data-bs-dismiss="modal"
-            aria-label="Close"></button>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
 </div>
 
 <div class="modal-body">
     <div class="row">
-        <div class="col-md-6 mb-3">
-            <label class="form-label fw-bold">Product ID</label>
-            <div class="form-control bg-light">@Model.ProductId</div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-            <label class="form-label fw-bold">Product Name</label>
-            <div class="form-control bg-light">@Model.ProductName</div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-            <label class="form-label fw-bold">Category</label>
-            <div class="form-control bg-light">
-                @(Model.Category != null &&
-                  !string.IsNullOrWhiteSpace(Model.Category.CategoryName)
-                    ? Model.Category.CategoryName
-                    : "Not assigned")
-            </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-            <label class="form-label fw-bold">SubCategory</label>
-            <div class="form-control bg-light">
-                @(Model.SubCategory != null &&
-                  !string.IsNullOrWhiteSpace(Model.SubCategory.SubCategoryName)
-                    ? Model.SubCategory.SubCategoryName
-                    : "Not assigned")
-            </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-            <label class="form-label fw-bold">SKU</label>
-            <div class="form-control bg-light">
-                @(string.IsNullOrWhiteSpace(Model.SKU) ? "N/A" : Model.SKU)
-            </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-            <label class="form-label fw-bold">Unit</label>
-            <div class="form-control bg-light">
-                @(string.IsNullOrWhiteSpace(Model.Unit) ? "N/A" : Model.Unit)
-            </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-            <label class="form-label fw-bold">Selling Price</label>
-            <div class="form-control bg-light">
-                ₹ @Model.SellingPrice.ToString("N2")
-            </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-            <label class="form-label fw-bold">GST Percentage</label>
-            <div class="form-control bg-light">
-                @Model.GSTPercentage.ToString("N2") %
-            </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-            <label class="form-label fw-bold">Status</label>
-            <div class="form-control bg-light">
-                @if (Model.IsActive)
-                {
-                    <span class="badge bg-success">Active</span>
-                }
-                else
-                {
-                    <span class="badge bg-danger">Inactive</span>
-                }
-            </div>
-        </div>
+        @Field("Product ID", Model.ProductId)
+        @Field("Product Name", Model.ProductName)
+        @Field("Category", Model.Category != null ? Model.Category.CategoryName : "Not assigned")
+        @Field("SubCategory", Model.SubCategory != null ? Model.SubCategory.SubCategoryName : "Not assigned")
+        @Field("SKU", string.IsNullOrWhiteSpace(Model.SKU) ? "N/A" : Model.SKU)
+        @Field("Unit", string.IsNullOrWhiteSpace(Model.Unit) ? "N/A" : Model.Unit)
+        @Field("Selling Price", "₹ " + Model.SellingPrice.ToString("N2"))
+        @Field("GST Percentage", Model.GSTPercentage.ToString("N2") + " %")
+        @Field("Status", Html.Raw(Model.IsActive
+            ? "<span class='badge bg-success'>Active</span>"
+            : "<span class='badge bg-danger'>Inactive</span>"))
     </div>
 </div>
 
 <div class="modal-footer">
-    <button type="button"
-            class="btn btn-warning btn-modal"
+    <button type="button" class="btn btn-warning btn-modal"
             data-url="@Url.Action("Edit", "Product", new { id = Model.ProductId })">
         <i class="bi bi-pencil-square me-1"></i> Edit Product
     </button>
-
-    <button type="button"
-            class="btn btn-secondary"
-            data-bs-dismiss="modal">
-        Close
-    </button>
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 </div>

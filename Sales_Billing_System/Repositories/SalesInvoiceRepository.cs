@@ -197,6 +197,29 @@ namespace Sales_Billing_System.Repositories
 
             _context.SaveChanges();
         }
+        // SEARCH CUSTOMERS (lazy dropdown)
+        public List<Customer_Master> SearchCustomers(string term)
+        {
+            term = (term ?? "").Trim();
+            if (term.Length == 0) return new List<Customer_Master>();
+
+            return _context.Customers.AsNoTracking()
+                .Where(c => c.CustomerName.Contains(term) || c.MobileNumber.Contains(term))
+                .OrderBy(c => c.CustomerName)
+                .Take(20).ToList();
+        }
+
+        // SEARCH PRODUCTS (lazy dropdown)
+        public List<Product_Master> SearchProducts(string term)
+        {
+            term = (term ?? "").Trim();
+            if (term.Length == 0) return new List<Product_Master>();
+
+            return _context.Products.AsNoTracking()
+                .Where(p => p.IsActive && (p.ProductName.Contains(term) || p.SKU.Contains(term)))
+                .OrderBy(p => p.ProductName)
+                .Take(20).ToList();
+        }
 
 
         // ============================================================
@@ -407,13 +430,13 @@ namespace Sales_Billing_System.Repositories
             return invoice;
         }
 
-        public PagedResult<Sales_Invoice> GetInvoicesPaged(
-    int pageNumber,
-    int pageSize,
-    string searchText,
-    DateTime? fromDate,
-    DateTime? toDate)
-        {
+    public PagedResult<Sales_Invoice> GetInvoicesPaged(
+        int pageNumber,
+        int pageSize,
+        string searchText,
+        DateTime? fromDate,
+        DateTime? toDate)
+            {
             var result =
                 new PagedResult<Sales_Invoice>();
 
