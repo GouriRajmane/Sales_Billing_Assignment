@@ -5,6 +5,10 @@
     ViewBag.Title = "Sales Invoices";
 }
 
+<!-- Select2 styles (needed by the lazy dropdowns inside the Create modal) -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
 <div class="container mt-4">
 
     <!-- Header -->
@@ -15,11 +19,12 @@
         </div>
         <div>
             <button type="button" class="btn btn-success btn-modal"
+                    data-size="modal-xl"
                     data-url="@Url.Action("Create", "SalesInvoice")">
                 <i class="bi bi-plus-circle me-1"></i> Add Invoice
             </button>
-
         </div>
+
     </div>
 
     <!-- Alert Placeholder -->
@@ -80,7 +85,6 @@
     <div id="invoiceListContainer">
 
         <!-- Invoice Table -->
-        @*<div class="card shadow-sm">*@
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0  table-bordered">
@@ -124,14 +128,13 @@
                                                 class="btn btn-sm btn-info me-1 btn-modal"
                                                 data-size="modal-xl"
                                                 data-url="@Url.Action("Details", "SalesInvoice", new { id = invoice.InvoiceId })">
-                                            <i class="bi bi-info"></i> @*View*@
+                                            <i class="bi bi-info"></i>
                                         </button>
 
-                                        <a href="@Url.Action("Print", "SalesInvoice",
-                                             new { id = invoice.InvoiceId })"
+                                        <a href="@Url.Action("Print", "SalesInvoice", new { id = invoice.InvoiceId })"
                                            class="btn btn-sm btn-secondary me-1"
                                            target="_blank">
-                                            <i class="bi bi-printer me-1"></i> @*Print*@
+                                            <i class="bi bi-printer me-1"></i>
                                         </a>
 
                                         @if (invoice.Status != "Cancelled")
@@ -140,7 +143,7 @@
                                                     class="btn btn-sm btn-danger btn-modal"
                                                     data-size="modal-md"
                                                     data-url="@Url.Action("ConfirmCancel", "SalesInvoice", new { id = invoice.InvoiceId })">
-                                                <i class="bi bi-x-circle me-1"></i> @*Cancel*@
+                                                <i class="bi bi-x-circle me-1"></i>
                                             </button>
                                         }
 
@@ -165,7 +168,6 @@
                 </table>
             </div>
         </div>
-        @*</div>*@
 
         <!-- Pagination -->
         @if (Model != null && Model.TotalPages > 0)
@@ -257,6 +259,9 @@
 @section Scripts
 {
     @Scripts.Render("~/bundles/jqueryval")
+
+    <!-- Select2 (must load before the modal content is injected) -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
         $(function () {

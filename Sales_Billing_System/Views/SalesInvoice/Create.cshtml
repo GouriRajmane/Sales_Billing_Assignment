@@ -37,12 +37,18 @@
                     </div>
 
                     <div class="col-md-4 mb-3">
-                        <label class="form-label fw-bold">Customer</label>
-                        <input type="text" id="CustomerText" name="CustomerText" class="form-control"
-                               placeholder="Search customer" autocomplete="off"
-                               value="@Request["CustomerText"]" />
-                        <input type="hidden" id="CustomerId" name="CustomerId"
-                               value="@(Model.CustomerId > 0 ? Model.CustomerId.ToString() : "")" />
+                        @Html.LabelFor(m => m.CustomerId, "Customer", new { @class = "form-label fw-bold" })
+                        <select id="CustomerId" name="CustomerId" class="form-select lazy-select"
+                                data-url="@Url.Action("SearchCustomers", "SalesInvoice")"
+                                data-placeholder="Search customer..."
+                                data-val="true" data-val-required="Please select a customer.">
+                            <option></option>
+                            @if (Model.CustomerId > 0)
+                            {
+                                <option value="@Model.CustomerId" selected>@Request["CustomerText"]</option>
+                            }
+                        </select>
+                        <input type="hidden" id="CustomerText" name="CustomerText" value="@Request["CustomerText"]" />
                         @Html.ValidationMessageFor(m => m.CustomerId, "", new { @class = "text-danger" })
                     </div>
 
@@ -60,7 +66,7 @@
             <div class="card-body">
                 <div id="itemError" class="alert alert-danger d-none" role="alert"></div>
 
-                <div class="table-responsive">
+                <div class="table-responsive mb-4">
                     <table class="table table-bordered table-hover align-middle" id="invoiceItemsTable">
                         <thead class="table-light">
                             <tr>
@@ -81,15 +87,21 @@
                                 for (int i = 0; i < Model.Items.Count; i++)
                                 {
                                     var it = Model.Items[i];
+                                    var pText = Request["Items[" + i + "].ProductText"];
                                     <tr class="invoice-item-row">
                                         <td>
-                                            <input type="text" name="Items[@i].ProductText" class="form-control product-text"
-                                                   placeholder="Search product" autocomplete="off"
-                                                   value="@Request["Items[" + i + "].ProductText"]" />
-                                            <input type="hidden" name="Items[@i].ProductId" class="product-id"
-                                                   value="@(it.ProductId > 0 ? it.ProductId.ToString() : "")" />
+                                            <select name="Items[@i].ProductId" class="form-select lazy-select product-select"
+                                                    data-url="@Url.Action("SearchProducts", "SalesInvoice")"
+                                                    data-placeholder="Search product..." required>
+                                                <option></option>
+                                                @if (it.ProductId > 0)
+                                                {
+                                                    <option value="@it.ProductId" selected>@pText</option>
+                                                }
+                                            </select>
+                                            <input type="hidden" name="Items[@i].ProductText" class="product-text" value="@pText" />
                                         </td>
-                                        <td><input type="number" name="Items[@i].Quantity" class="form-control quantity" value="@(it.Quantity <= 0 ? "1" : it.Quantity.ToString("0.##", CultureInfo.InvariantCulture))" step="0.01" min="0.01" required /></td>
+                                        <td><input type="number" name="Items[@i].Quantity" class="form-control quantity" value="@(it.Quantity <= 0 ? "1" : it.Quantity.ToString("0.##", CultureInfo.InvariantCulture))" step="1" min="1" required /></td>
                                         <td><input type="number" name="Items[@i].Rate" class="form-control rate" value="@it.Rate.ToString("0.00", CultureInfo.InvariantCulture)" step="0.01" min="0" required /></td>
                                         <td><input type="number" name="Items[@i].GSTPercentage" class="form-control gst" value="@it.GSTPercentage.ToString("0.##", CultureInfo.InvariantCulture)" step="0.01" min="0" max="100" required /></td>
                                         <td>
@@ -155,7 +167,6 @@
         var itemsBody = document.getElementById("invoiceItemsBody");
         var itemError = document.getElementById("itemError");
         var itemIndex = itemsBody.querySelectorAll("tr").length;
-        var searchUrl = '@Url.Action("SearchCustomers", "SalesInvoice")';
         var productUrl = '@Url.Action("SearchProducts", "SalesInvoice")';
 
         function roundMoney(v) { return Math.round((v + Number.EPSILON) * 100) / 100; }
@@ -163,61 +174,48 @@
         function showError(m) { itemError.textContent = m; itemError.classList.remove("d-none"); }
         function clearError() { itemError.textContent = ""; itemError.classList.add("d-none"); }
 
-        // ---------- LAZY SEARCH DROPDOWN (shared by customer + product) ----------
-        var box = document.createElement("div");
-        box.className = "list-group shadow position-fixed d-none";
-        box.style.cssText = "z-index:2000;max-height:220px;overflow-y:auto;";
-        form.appendChild(box);
-
-        var timer, reqId = 0;
-
-        function hideBox() { box.classList.add("d-none"); }
-
-        function lazySearch(input, url, onPick) {
-            clearTimeout(timer);
-            var term = input.value.trim();
-            if (!term) { hideBox(); return; }
-
-            var id = ++reqId;
-            timer = setTimeout(function () {
-                fetch(url + "?term=" + encodeURIComponent(term))
-                    .then(function (r) { return r.json(); })
-                    .then(function (data) {
-                        if (id !== reqId) return;                      // ignore outdated responses
-                        var r = input.getBoundingClientRect();
-                        box.style.left = r.left + "px";
-                        box.style.top = r.bottom + "px";
-                        box.style.width = r.width + "px";
-                        box.innerHTML = data.length ? "" : '<div class="list-group-item text-muted">No results found</div>';
-
-                        data.forEach(function (d) {
-                            var b = document.createElement("button");
-                            b.type = "button";
-                            b.className = "list-group-item list-group-item-action";
-                            b.textContent = d.text;
-                            b.onmousedown = function (e) { e.preventDefault(); onPick(d); hideBox(); };
-                            box.appendChild(b);
-                        });
-                        box.classList.remove("d-none");
-                    })
-                    .catch(hideBox);
-            }, 300);
+        // ---------- LAZY SELECT (same pattern as Product page) ----------
+        function initLazy($el) {
+            $el.select2({
+                theme: "bootstrap-5",
+                width: "100%",
+                dropdownParent: $("#appModal"),
+                placeholder: $el.data("placeholder"),
+                allowClear: true,
+                minimumInputLength: 1,
+                language: {
+                    inputTooShort: function () { return $el.data("placeholder"); },
+                    searching: function () { return "Searching..."; },
+                    noResults: function () { return "No results found"; }
+                },
+                ajax: {
+                    url: $el.data("url"),
+                    delay: 300,
+                    cache: false,
+                    data: function (p) { return { term: p.term }; },
+                    processResults: function (d) { return { results: d }; }
+                }
+            });
         }
 
-        // ---------- CUSTOMER ----------
-        var customerText = document.getElementById("CustomerText");
-        var customerId = document.getElementById("CustomerId");
+        $("#invoiceForm .lazy-select").each(function () { initLazy($(this)); });
 
-        customerText.addEventListener("input", function () {
-            customerId.value = "";                                      // must pick from the list
-            lazySearch(customerText, searchUrl, function (d) {
-                customerId.value = d.id;
-                customerText.value = d.text;
-            });
+        // Product picked -> fill rate and GST
+        $(itemsBody).on("select2:select", ".product-select", function (e) {
+            var row = this.closest("tr"), d = e.params.data;
+            row.querySelector(".rate").value = Number(d.rate).toFixed(2);
+            row.querySelector(".gst").value = Number(d.gst).toFixed(2);
+            calculateInvoiceTotals();
         });
-        customerText.addEventListener("blur", hideBox);
 
-        // ---------- PRODUCT ROWS ----------
+        $(itemsBody).on("select2:clear", ".product-select", function () {
+            var row = this.closest("tr");
+            row.querySelector(".rate").value = "0.00";
+            row.querySelector(".gst").value = "0.00";
+            calculateInvoiceTotals();
+        });
+
+        // ---------- CALCULATIONS ----------
         function calculateRow(row) {
             var qty = parseFloat(row.querySelector(".quantity").value) || 0;
             var rate = parseFloat(row.querySelector(".rate").value) || 0;
@@ -255,12 +253,13 @@
             document.getElementById("GrandTotal").value = grand.toFixed(2);
         }
 
+        // ---------- ROWS ----------
         function addNewRow() {
             var n = itemIndex, row = document.createElement("tr");
             row.className = "invoice-item-row";
             row.innerHTML =
-                '<td><input type="text" name="Items[' + n + '].ProductText" class="form-control product-text" placeholder="Search product" autocomplete="off" />' +
-                '<input type="hidden" name="Items[' + n + '].ProductId" class="product-id" value="" /></td>' +
+                '<td><select name="Items[' + n + '].ProductId" class="form-select lazy-select product-select" data-url="' + productUrl + '" data-placeholder="Search product..." required><option></option></select>' +
+                '<input type="hidden" name="Items[' + n + '].ProductText" class="product-text" value="" /></td>' +
                 '<td><input type="number" name="Items[' + n + '].Quantity" class="form-control quantity" value="1" step="0.01" min="0.01" required /></td>' +
                 '<td><input type="number" name="Items[' + n + '].Rate" class="form-control rate" value="0.00" step="0.01" min="0" required /></td>' +
                 '<td><input type="number" name="Items[' + n + '].GSTPercentage" class="form-control gst" value="0.00" step="0.01" min="0" max="100" required /></td>' +
@@ -270,6 +269,7 @@
                 '<td class="text-center"><button type="button" class="btn btn-danger btn-sm remove-item">Remove</button></td>';
 
             itemsBody.appendChild(row);
+            initLazy($(row).find(".lazy-select"));
             itemIndex++;
             calculateInvoiceTotals();
         }
@@ -277,7 +277,7 @@
         function updateItemIndexes() {
             var rows = itemsBody.querySelectorAll("tr");
             rows.forEach(function (row, index) {
-                row.querySelectorAll("input").forEach(function (el) {
+                row.querySelectorAll("input, select").forEach(function (el) {
                     var name = el.getAttribute("name");
                     if (name) el.setAttribute("name", name.replace(/Items\[\d+\]/g, "Items[" + index + "]"));
                 });
@@ -288,26 +288,8 @@
         document.getElementById("addItemBtn").addEventListener("click", addNewRow);
 
         itemsBody.addEventListener("input", function (e) {
-            var t = e.target, c = t.classList;
-
-            if (c.contains("product-text")) {
-                var row = t.closest("tr");
-                row.querySelector(".product-id").value = "";            // must pick from the list
-                lazySearch(t, productUrl, function (d) {
-                    row.querySelector(".product-id").value = d.id;
-                    t.value = d.text;
-                    row.querySelector(".rate").value = Number(d.rate).toFixed(2);
-                    row.querySelector(".gst").value = Number(d.gst).toFixed(2);
-                    calculateInvoiceTotals();
-                });
-            }
-            else if (c.contains("quantity") || c.contains("rate") || c.contains("gst")) {
-                calculateInvoiceTotals();
-            }
-        });
-
-        itemsBody.addEventListener("focusout", function (e) {
-            if (e.target.classList.contains("product-text")) hideBox();
+            var c = e.target.classList;
+            if (c.contains("quantity") || c.contains("rate") || c.contains("gst")) calculateInvoiceTotals();
         });
 
         itemsBody.addEventListener("click", function (e) {
@@ -318,13 +300,15 @@
                 return;
             }
 
-            e.target.closest("tr").remove();
+            var row = e.target.closest("tr");
+            $(row).find(".lazy-select").select2("destroy");
+            row.remove();
             updateItemIndexes();
             clearError();
             calculateInvoiceTotals();
         });
 
-        // Client-side validation (runs before the shared AJAX submit)
+        // ---------- SUBMIT (runs before the shared AJAX handler) ----------
         form.addEventListener("submit", function (event) {
 
             function stop(msg) {
@@ -335,7 +319,8 @@
 
             clearError();
 
-            if (!customerId.value) { stop("Please search and select a customer."); return; }
+            var $cust = $("#CustomerId");
+            if (!$cust.val()) { stop("Please search and select a customer."); return; }
 
             var rows = itemsBody.querySelectorAll("tr");
             if (rows.length === 0) { stop("Please add at least one invoice item."); return; }
@@ -346,13 +331,19 @@
                 var rate = parseFloat(row.querySelector(".rate").value);
                 var gst = parseFloat(row.querySelector(".gst").value);
 
-                if (!row.querySelector(".product-id").value || isNaN(qty) || qty <= 0 ||
+                if (!$(row).find(".product-select").val() || isNaN(qty) || qty <= 0 ||
                     isNaN(rate) || rate < 0 || isNaN(gst) || gst < 0 || gst > 100) {
                     invalid = true;
                 }
             });
 
             if (invalid) { stop("Please search and select a product, and enter valid quantity, rate and GST for every row."); return; }
+
+            // Keep selected names so they survive a failed server-side save
+            document.getElementById("CustomerText").value = $cust.find("option:selected").text();
+            rows.forEach(function (row) {
+                row.querySelector(".product-text").value = $(row).find(".product-select option:selected").text();
+            });
 
             calculateInvoiceTotals();
         });
