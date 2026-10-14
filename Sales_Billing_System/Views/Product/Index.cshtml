@@ -10,7 +10,7 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
-<div class="container mt-4">
+<div class="container mt-5">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -203,71 +203,23 @@
             </div>
         </div>
 
-        @if (Model != null && Model.TotalPages > 0)
+        <!-- Load more -->
+        @if (Model != null && Model.TotalRecords > 0)
         {
-            <div class="row mt-4 align-items-center">
-                <div class="col-md-6">
-                    <p class="text-muted mb-2">
-                        Showing
-                        <strong>@(((Model.CurrentPage - 1) * Model.PageSize) + 1)</strong>
-                        -
-                        <strong>@(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalRecords))</strong>
-                        of <strong>@Model.TotalRecords</strong> products
-                    </p>
-                </div>
+            <div id="loadMoreWrap" class="text-center my-4">
+                <p class="text-muted mb-2">
+                    Showing <strong>@(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalRecords))</strong>
+                    of <strong>@Model.TotalRecords</strong> products
+                </p>
 
-                <div class="col-md-6">
-                    <nav aria-label="Product pagination">
-                        <ul class="pagination justify-content-md-end flex-wrap">
-
-                            <li class="page-item @(Model.CurrentPage <= 1 ? "disabled" : "")">
-                                @if (Model.CurrentPage > 1)
-                                {
-                                    <a class="page-link"
-                                       href="@Url.Action("Index", "Product", new { page = Model.CurrentPage - 1, pageSize = Model.PageSize, searchText = ViewBag.SearchText })">
-                                        &laquo; Previous
-                                    </a>
-                                }
-                                else
-                                {
-                                    <span class="page-link">&laquo; Previous</span>
-                                }
-                            </li>
-
-                            @for (int i = 1; i <= Model.TotalPages; i++)
-                            {
-                                <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                                    @if (i == Model.CurrentPage)
-                                    {
-                                        <span class="page-link">@i</span>
-                                    }
-                                    else
-                                    {
-                                        <a class="page-link"
-                                           href="@Url.Action("Index", "Product", new { page = i, pageSize = Model.PageSize, searchText = ViewBag.SearchText })">
-                                            @i
-                                        </a>
-                                    }
-                                </li>
-                            }
-
-                            <li class="page-item @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")">
-                                @if (Model.CurrentPage < Model.TotalPages)
-                                {
-                                    <a class="page-link"
-                                       href="@Url.Action("Index", "Product", new { page = Model.CurrentPage + 1, pageSize = Model.PageSize, searchText = ViewBag.SearchText })">
-                                        Next &raquo;
-                                    </a>
-                                }
-                                else
-                                {
-                                    <span class="page-link">Next &raquo;</span>
-                                }
-                            </li>
-
-                        </ul>
-                    </nav>
-                </div>
+                @if (Model.CurrentPage < Model.TotalPages)
+                {
+                    <button type="button" id="loadMoreBtn" class="btn btn-outline-success px-4"
+                            data-next-page="@(Model.CurrentPage + 1)"
+                            data-page-size="@Model.PageSize">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Load more
+                    </button>
+                }
             </div>
         }
     </div>
@@ -372,6 +324,28 @@
                     url + ' #productListContainer > *'
                 );
             }
+
+            // Load more: append the next page of rows under the current ones
+            $(document).on('click', '#loadMoreBtn', function () {
+                var $btn = $(this), original = $btn.html();
+                var p = new URLSearchParams(window.location.search);
+                p.set('page', $btn.data('next-page'));
+                p.set('pageSize', $btn.data('page-size'));
+
+                $btn.prop('disabled', true)
+                    .html('<span class="spinner-border spinner-border-sm me-2"></span>Loading...');
+
+                $.get(window.location.pathname + '?' + p.toString())
+                    .done(function (html) {
+                        var $doc = $('<div>').append($.parseHTML(html));
+                        $('#productListContainer tbody').append($doc.find('#productListContainer tbody tr'));
+                        $('#loadMoreWrap').replaceWith($doc.find('#loadMoreWrap'));
+                    })
+                    .fail(function () {
+                        $btn.prop('disabled', false).html(original);
+                        showAlert('Unable to load more records. Please try again.', 'danger');
+                    });
+            });
 
             // Load a modal partial.
             $(document).on('click', '.btn-modal', function () {
