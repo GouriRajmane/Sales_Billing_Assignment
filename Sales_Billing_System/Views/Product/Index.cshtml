@@ -15,6 +15,7 @@
 <link href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
 <link href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css" rel="stylesheet" />
 <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/rowgroup/1.4.1/css/rowGroup.bootstrap5.min.css" rel="stylesheet" />
 
 <style>
     /* ---------- DataTable polish (same as Sales Invoice) ---------- */
@@ -30,6 +31,15 @@
         vertical-align: middle;
         padding-top: .65rem;
         padding-bottom: .65rem;
+    }
+
+    /* Category group header rows */
+    #productsTable tr.dtrg-group td {
+        background: #e8f5ee;
+        border-left: 4px solid #198754;
+        color: #146c43;
+        font-weight: 600;
+        padding: .55rem .85rem;
     }
 
     .data-table-card div.dataTables_wrapper div.dataTables_length select {
@@ -49,11 +59,13 @@
     .data-table-card .page-item.active .page-link {
         background-color: #198754;
         border-color: #198754;
+        color: #ffffff; /* Adds white text color when active */
     }
 
     .data-table-card .page-link {
         color: #198754;
     }
+
 
     .data-table-card .page-item.disabled .page-link {
         color: #6c757d;
@@ -113,7 +125,7 @@
                                      new
                                      {
                                          @class = "form-control",
-                                         placeholder = "Enter product, SKU, category, unit or status",
+                                         placeholder = "Type to filter by product, SKU, category, unit or status",
                                          autocomplete = "off"
                                      })
                         </div>
@@ -153,7 +165,7 @@
                 <table id="productsTable" class="table table-hover table-bordered align-middle w-100">
                     <thead class="table-success">
                         <tr>
-                            <th class="text-center" style="width:60px;">Sr. No.</th>
+                            <th class="text-center" style="width: 60px;">Sr. No.</th>
                             <th>Category</th>
                             <th>SubCategory</th>
                             <th>Product Name</th>
@@ -293,6 +305,7 @@
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
     <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/rowgroup/1.4.1/js/dataTables.rowGroup.min.js"></script>
 
     <script>
         $(function () {
@@ -311,12 +324,31 @@
                 if (!$table.length) return;
 
                 var exportOpts = { columns: [1, 2, 3, 4, 5, 6, 7, 8], orthogonal: 'export' };
+                var counts = {};
+                var catName = function (html) { return $('<div>').html(html).text().trim(); };
 
                 var dt = $table.DataTable({
                     responsive: true,
                     pageLength: 10,
                     lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+                    orderFixed: [[1, 'asc']],   // keeps rows grouped by Category; other columns sort inside each group
                     order: [[3, 'asc']],
+                    // Products per category, counted over all rows matching the current filter (not just this page)
+                    preDrawCallback: function () {
+                        counts = {};
+                        this.api().rows({ search: 'applied' }).data().each(function (r) {
+                            var n = catName(r[1]);
+                            counts[n] = (counts[n] || 0) + 1;
+                        });
+                    },
+                    rowGroup: {
+                        dataSrc: 1,
+                        startRender: function (rows, group) {
+                            var n = catName(group), c = counts[n] || rows.count();
+                            return '<i class="bi bi-folder2-open me-2"></i>' + $('<div>').text(n).html() +
+                                ' <span class="badge bg-success ms-2">' + c + (c === 1 ? ' product' : ' products') + '</span>';
+                        }
+                    },
                     autoWidth: false,
                     // No built-in filter box: the Search field above drives the table live
                     dom: "<'row align-items-center mb-3'<'col-md-8'B><'col-md-4 text-md-end'l>>" +
@@ -346,6 +378,7 @@
                     ],
                     columnDefs: [
                         { targets: [0, 9], orderable: false, searchable: false },
+                        { targets: 1, visible: false },   // category is shown in the group header instead
                         { targets: 0, className: 'text-center' },
                         { targets: [6, 7], className: 'text-end' },
                         { targets: [8, 9], className: 'text-center' },
@@ -379,11 +412,11 @@
             }
 
             // Live filtering while typing (Enter / Search button still does a full server search)
-            //$(document).on('input', '#searchText', function () {
-            //    if ($.fn.DataTable.isDataTable('#productsTable')) {
-            //        $('#productsTable').DataTable().search(this.value).draw();
-            //    }
-            //});
+            $(document).on('input', '#searchText', function () {
+                if ($.fn.DataTable.isDataTable('#productsTable')) {
+                    $('#productsTable').DataTable().search(this.value).draw();
+                }
+            });
 
             function loadProductList() {
                 if ($.fn.DataTable.isDataTable('#productsTable')) {
