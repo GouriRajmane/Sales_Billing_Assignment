@@ -28,10 +28,8 @@ namespace Sales_Billing_System.Controllers
         // =====================================================
 
         [HttpGet]
-        public ActionResult Index(
-            string searchText,
-            int page = 1,
-            int pageSize = 10)
+        public ActionResult Index(string searchText, int page = 1, int pageSize = 1000)
+
         {
             if (page < 1)
                 page = 1;

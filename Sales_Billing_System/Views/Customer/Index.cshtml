@@ -5,6 +5,60 @@
     ViewBag.Title = "Customers";
 }
 
+<!-- DataTables (Bootstrap 5 skin) + Buttons + Responsive -->
+<link href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet" />
+
+<style>
+    /* ---------- DataTable polish (same as Sales Invoice) ---------- */
+    #customersTable thead th {
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    #customersTable tbody td {
+        vertical-align: middle;
+        padding-top: .65rem;
+        padding-bottom: .65rem;
+    }
+
+    .data-table-card div.dataTables_wrapper div.dataTables_length select {
+        border-radius: .375rem;
+    }
+
+    .data-table-card .dt-buttons .btn {
+        margin-right: .35rem;
+    }
+
+    .data-table-card div.dataTables_wrapper div.dataTables_info {
+        color: #6c757d;
+        font-size: .875rem;
+        padding-top: .5rem;
+    }
+
+    .data-table-card .page-item.active .page-link {
+        background-color: #198754;
+        border-color: #198754;
+    }
+
+    .data-table-card .page-link {
+        color: #198754;
+    }
+
+    .data-table-card .page-item.disabled .page-link {
+        color: #6c757d;
+    }
+
+    table.dataTable > thead > tr > th.sorting:before,
+    table.dataTable > thead > tr > th.sorting:after {
+        opacity: .35;
+    }
+</style>
+
 <div class="container mt-5">
 
     <!-- Page Header -->
@@ -40,7 +94,7 @@
         }
     </div>
 
-    <!-- Search Section -->
+    <!-- Search: filters the table live while typing; Enter / Search runs a server search -->
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             @using (Html.BeginForm("Index", "Customer", FormMethod.Get))
@@ -48,8 +102,11 @@
                 <div class="row g-2 align-items-end">
                     <div class="col-md-9">
                         <label class="form-label"><strong>Search</strong></label>
-                        @Html.TextBox("searchText", ViewBag.SearchText as string,
-                            new { @class = "form-control", placeholder = "Search by customer name, mobile number or GSTIN..." })
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            @Html.TextBox("searchText", ViewBag.SearchText as string,
+                                     new { @class = "form-control", placeholder = "Enter customer name, mobile number, GSTIN or address", autocomplete = "off" })
+                        </div>
                     </div>
                     <div class="col-md-3 d-flex gap-2">
                         <button type="submit" class="btn btn-primary flex-fill" title="Search">
@@ -68,29 +125,36 @@
     <!-- Reloaded via AJAX after Create / Edit -->
     <div id="customerListContainer">
 
-        <!-- Customer Table -->
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 table-bordered">
+        @if (Model != null && Model.Items != null && Model.TotalRecords > Model.Items.Count())
+        {
+            <div class="alert alert-warning py-2 small">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Showing the first <strong>@Model.Items.Count()</strong> of <strong>@Model.TotalRecords</strong> customers.
+                Use the search above to narrow the list.
+            </div>
+        }
+
+        <div class="card shadow-sm data-table-card">
+            <div class="card-body">
+
+                <table id="customersTable" class="table table-hover align-middle table-bordered w-100">
                     <thead class="table-success">
                         <tr>
-                            <th>Sr. No.</th>
+                            <th class="text-center" style="width:60px;">Sr. No.</th>
                             <th>Customer Name</th>
                             <th>GSTIN</th>
                             <th>Mobile Number</th>
                             <th>Address</th>
-                            <th class="text-center">Actions</th>
+                            <th class="text-center" style="width:110px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @if (Model != null && Model.Items != null && Model.Items.Any())
+                        @if (Model != null && Model.Items != null)
                         {
-                            int count = ((Model.CurrentPage - 1) * Model.PageSize) + 1;
-
                             foreach (var customer in Model.Items)
                             {
                                 <tr>
-                                    <td>@count</td>
+                                    <td class="text-center"></td> @* numbered by DataTables on every draw *@
                                     <td><strong>@customer.CustomerName</strong></td>
                                     <td>
                                         @if (!string.IsNullOrWhiteSpace(customer.GSTIN))
@@ -115,7 +179,7 @@
                                         </button>
 
                                         <button type="button"
-                                                class="btn btn-sm btn-warning me-1 btn-modal"
+                                                class="btn btn-sm btn-warning btn-modal"
                                                 title="Edit Customer"
                                                 aria-label="Edit Customer"
                                                 data-url="@Url.Action("Edit", "Customer", new { id = customer.CustomerId })">
@@ -123,45 +187,13 @@
                                         </button>
                                     </td>
                                 </tr>
-
-                                count++;
                             }
-                        }
-                        else
-                        {
-                            <tr>
-                                <td colspan="6" class="text-center py-4">
-                                    <div class="text-muted">
-                                        <h5>No Customers Found</h5>
-                                        <p class="mb-0">There are currently no customers available.</p>
-                                    </div>
-                                </td>
-                            </tr>
                         }
                     </tbody>
                 </table>
+
             </div>
         </div>
-
-        <!-- Load more -->
-        @if (Model != null && Model.TotalRecords > 0)
-        {
-            <div id="loadMoreWrap" class="text-center my-4">
-                <p class="text-muted mb-2">
-                    Showing <strong>@(Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalRecords))</strong>
-                    of <strong>@Model.TotalRecords</strong> customers
-                </p>
-
-                @if (Model.CurrentPage < Model.TotalPages)
-                {
-                    <button type="button" id="loadMoreBtn" class="btn btn-outline-success px-4"
-                            data-next-page="@(Model.CurrentPage + 1)"
-                            data-page-size="@Model.PageSize">
-                        <i class="bi bi-arrow-clockwise me-1"></i> Load more
-                    </button>
-                }
-            </div>
-        }
 
     </div> <!-- /customerListContainer -->
 
@@ -178,6 +210,18 @@
 {
     @Scripts.Render("~/bundles/jqueryval")
 
+    <!-- DataTables core + Bootstrap 5 + Buttons (Excel/CSV/Print/Column visibility) + Responsive -->
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+
     <script>
         $(function () {
 
@@ -188,6 +232,97 @@
             var $dialog = $('#appModalDialog');
             var $content = $('#appModalContent');
 
+            // ---------- DataTable ----------
+            $.fn.dataTable.Buttons.defaults.dom.button.className = 'btn btn-sm';
+
+            function initCustomerTable() {
+                var $table = $('#customersTable');
+                if (!$table.length) return;
+
+                var exportOpts = { columns: [1, 2, 3, 4], orthogonal: 'export' };
+
+                var dt = $table.DataTable({
+                    responsive: true,
+                    pageLength: 10,
+                    lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+                    order: [[1, 'asc']],
+                    autoWidth: false,
+                    // No built-in filter box: the Search field above drives the table live
+                    dom: "<'row align-items-center mb-3'<'col-md-8'B><'col-md-4 text-md-end'l>>" +
+                        "<'row'<'col-12'tr>>" +
+                        "<'row align-items-center mt-3'<'col-md-6'i><'col-md-6'p>>",
+                    buttons: [
+                        {
+                            extend: 'excelHtml5',
+                            text: '<i class="bi bi-file-earmark-excel me-1"></i>Excel',
+                            className: 'btn-outline-success',
+                            title: 'Customers',
+                            exportOptions: exportOpts
+                        },
+                        {
+                            extend: 'print',
+                            text: '<i class="bi bi-printer me-1"></i>Print',
+                            className: 'btn-outline-secondary',
+                            title: 'Customers',
+                            exportOptions: exportOpts
+                        },
+                        {
+                            extend: 'colvis',
+                            text: '<i class="bi bi-columns-gap me-1"></i>Columns',
+                            className: 'btn-outline-primary',
+                            columns: [1, 2, 3, 4]
+                        }
+                    ],
+                    columnDefs: [
+                        { targets: [0, 5], orderable: false, searchable: false },
+                        { targets: [0, 5], className: 'text-center' },
+                        { targets: 1, responsivePriority: 1 },
+                        { targets: 5, responsivePriority: 2 },
+                        { targets: 3, responsivePriority: 3 }
+                    ],
+                    language: {
+                        lengthMenu: 'Show _MENU_ entries',
+                        info: 'Showing _START_ to _END_ of _TOTAL_ customers',
+                        infoEmpty: 'No customers to show',
+                        infoFiltered: '(filtered from _MAX_)',
+                        emptyTable: '<div class="text-muted py-4"><h5 class="mb-1">No Customers Found</h5><p class="mb-0">There are currently no customers available.</p></div>',
+                        zeroRecords: '<div class="text-muted py-4"><h5 class="mb-1">No Matching Customers</h5><p class="mb-0">Try a different search term.</p></div>',
+                        paginate: { previous: '&laquo;', next: '&raquo;' }
+                    },
+                    // Keep Sr. No. continuous across pages and correct after sorting / filtering
+                    drawCallback: function () {
+                        var api = this.api();
+                        var start = api.page.info().start;
+                        api.column(0, { page: 'current' }).nodes().each(function (cell, i) {
+                            cell.innerHTML = start + i + 1;
+                        });
+                    }
+                });
+
+                // Re-apply whatever is already typed in the Search box (page load / after reload)
+                var q = $('#searchText').val();
+                if (q) dt.search(q).draw();
+            }
+
+            // Live filtering while typing (Enter / Search button still does a full server search)
+            //$(document).on('input', '#searchText', function () {
+            //    if ($.fn.DataTable.isDataTable('#customersTable')) {
+            //        $('#customersTable').DataTable().search(this.value).draw();
+            //    }
+            //});
+
+            function reloadCustomerList() {
+                if ($.fn.DataTable.isDataTable('#customersTable')) {
+                    $('#customersTable').DataTable().destroy();
+                }
+                // Reload only the list, keeping current search
+                $('#customerListContainer')
+                    .load(window.location.href + ' #customerListContainer > *', initCustomerTable);
+            }
+
+            initCustomerTable();
+
+            // ---------- Modal / form helpers ----------
             function parseForm() {
                 var $form = $content.find('form');
                 if ($form.length) {
@@ -206,29 +341,8 @@
                     '</div>');
             }
 
-            // Load more: append the next page of rows under the current ones
-            $(document).on('click', '#loadMoreBtn', function () {
-                var $btn = $(this), original = $btn.html();
-                var p = new URLSearchParams(window.location.search);
-                p.set('page', $btn.data('next-page'));
-                p.set('pageSize', $btn.data('page-size'));
-
-                $btn.prop('disabled', true)
-                    .html('<span class="spinner-border spinner-border-sm me-2"></span>Loading...');
-
-                $.get(window.location.pathname + '?' + p.toString())
-                    .done(function (html) {
-                        var $doc = $('<div>').append($.parseHTML(html));
-                        $('#customerListContainer tbody').append($doc.find('#customerListContainer tbody tr'));
-                        $('#loadMoreWrap').replaceWith($doc.find('#loadMoreWrap'));
-                    })
-                    .fail(function () {
-                        $btn.prop('disabled', false).html(original);
-                        showAlert('Unable to load more records. Please try again.', 'danger');
-                    });
-            });
-
             // Open modal: load Create / Edit / Details
+            // (delegated, so it also works for rows redrawn by DataTables and responsive child rows)
             $(document).on('click', '.btn-modal', function () {
                 var url = $(this).data('url');
                 var size = $(this).data('size') || 'modal-lg';
@@ -261,9 +375,7 @@
                             showAlert(res.message, res.success ? 'success' : 'danger');
 
                             if (res.success) {
-                                // Reload only the list, keeping current search
-                                $('#customerListContainer')
-                                    .load(window.location.href + ' #customerListContainer > *');
+                                reloadCustomerList();
                             }
                         }
                         else {

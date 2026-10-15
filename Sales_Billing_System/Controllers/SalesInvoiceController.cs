@@ -12,7 +12,7 @@ namespace Sales_Billing_System.Controllers
         private readonly ISalesInvoiceService _invoiceService = new SalesInvoiceService();
 
         // INDEX
-        public ActionResult Index(string searchText, DateTime? fromDate, DateTime? toDate, int page = 1, int pageSize = 10)
+        public ActionResult Index(string searchText, DateTime? fromDate, DateTime? toDate, int page = 1, int pageSize = 1000)
         {
             ViewBag.SearchText = searchText;
             ViewBag.FromDate = fromDate;

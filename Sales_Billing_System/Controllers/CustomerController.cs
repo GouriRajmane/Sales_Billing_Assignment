@@ -18,10 +18,7 @@ namespace Sales_Billing_System.Controllers
         // Customer Listing and Search
 
         // GET: Customer
-        public ActionResult Index(
-            string searchText,
-            int page = 1,
-            int pageSize = 10)
+        public ActionResult Index(string searchText, int page = 1, int pageSize = 1000)
         {
             ViewBag.SearchText = searchText;
             ViewBag.PageSize = pageSize;
