@@ -412,11 +412,11 @@
             }
 
             // Live filtering while typing (Enter / Search button still does a full server search)
-            $(document).on('input', '#searchText', function () {
-                if ($.fn.DataTable.isDataTable('#productsTable')) {
-                    $('#productsTable').DataTable().search(this.value).draw();
-                }
-            });
+            //$(document).on('input', '#searchText', function () {
+            //    if ($.fn.DataTable.isDataTable('#productsTable')) {
+            //        $('#productsTable').DataTable().search(this.value).draw();
+            //    }
+            //});
 
             function loadProductList() {
                 if ($.fn.DataTable.isDataTable('#productsTable')) {
