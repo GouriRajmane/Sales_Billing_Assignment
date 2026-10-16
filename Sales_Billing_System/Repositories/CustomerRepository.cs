@@ -75,124 +75,43 @@ namespace Sales_Billing_System.Repositories
                            .ToList();
         }
 
-        public PagedResult<Customer_Master> GetCustomersPaged(
-            int pageNumber,
-            int pageSize,
-            string searchText)
+        public PagedResult<Customer_Master> GetCustomersCursor(int pageSize, string searchText, int? lastId)
         {
-            PagedResult<Customer_Master> result =
-                new PagedResult<Customer_Master>();
-
-            result.CurrentPage = pageNumber;
-            result.PageSize = pageSize;
-
-            var connection =
-                (MySqlConnection)_context.Database.Connection;
-
-            bool shouldCloseConnection =
-                connection.State != ConnectionState.Open;
-
+            var result = new PagedResult<Customer_Master> { PageSize = pageSize };
+            var connection = (MySqlConnection)_context.Database.Connection;
+            bool shouldClose = connection.State != ConnectionState.Open;
             try
             {
-                if (shouldCloseConnection)
+                if (shouldClose) connection.Open();
+                using (var command = new MySqlCommand("sp_GetCustomersCursor", connection))
                 {
-                    connection.Open();
-                }
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@p_PageSize", pageSize);
+                    command.Parameters.AddWithValue("@p_SearchText", string.IsNullOrWhiteSpace(searchText) ? (object)DBNull.Value : searchText.Trim());
+                    command.Parameters.AddWithValue("@p_LastId", lastId.HasValue ? (object)lastId.Value : DBNull.Value);
 
-                using (MySqlCommand command =
-                    new MySqlCommand(
-                        "sp_GetCustomersPaged",
-                        connection))
-                {
-                    command.CommandType =
-                        CommandType.StoredProcedure;
-
-                    command.Parameters.AddWithValue(
-                        "@p_PageNumber",
-                        pageNumber);
-
-                    command.Parameters.AddWithValue(
-                        "@p_PageSize",
-                        pageSize);
-
-                    command.Parameters.AddWithValue(
-                        "@p_SearchText",
-                        string.IsNullOrWhiteSpace(searchText)
-                            ? (object)DBNull.Value
-                            : searchText.Trim());
-
-
-                    using (MySqlDataReader reader =
-                        command.ExecuteReader())
+                    using (var reader = command.ExecuteReader())
                     {
-                        // ====================================================
-                        // FIRST RESULT SET
-                        // CUSTOMER DATA
-                        // ====================================================
+                        Func<string, string> text = n => reader[n] == DBNull.Value ? null : Convert.ToString(reader[n]);
 
                         while (reader.Read())
-                        {
-                            Customer_Master customer =
-                                new Customer_Master
-                                {
-                                    CustomerId =
-                                        Convert.ToInt32(
-                                            reader["CustomerId"]),
+                            result.Items.Add(new Customer_Master
+                            {
+                                CustomerId = Convert.ToInt32(reader["CustomerId"]),
+                                CustomerName = text("CustomerName"),
+                                MobileNumber = text("MobileNumber"),
+                                Address = text("Address"),
+                                GSTIN = text("GSTIN")
+                            });
 
-                                    CustomerName =
-                                        Convert.ToString(
-                                            reader["CustomerName"]),
-
-                                    MobileNumber =
-                                        reader["MobileNumber"] ==
-                                            DBNull.Value
-                                            ? null
-                                            : Convert.ToString(
-                                                reader["MobileNumber"]),
-
-                                    Address =
-                                        reader["Address"] ==
-                                            DBNull.Value
-                                            ? null
-                                            : Convert.ToString(
-                                                reader["Address"]),
-
-                                    GSTIN =
-                                        reader["GSTIN"] ==
-                                            DBNull.Value
-                                            ? null
-                                            : Convert.ToString(
-                                                reader["GSTIN"])
-                                };
-
-                            result.Items.Add(customer);
-                        }
-
-
-                        // ====================================================
-                        // SECOND RESULT SET
-                        // TOTAL RECORDS
-                        // ====================================================
-
-                        if (reader.NextResult() &&
-                            reader.Read())
-                        {
-                            result.TotalRecords =
-                                Convert.ToInt32(
-                                    reader["TotalRecords"]);
-                        }
+                        if (reader.NextResult() && reader.Read())
+                            result.TotalRecords = Convert.ToInt32(reader["TotalRecords"]);
                     }
                 }
             }
-            finally
-            {
-                if (shouldCloseConnection &&
-                    connection.State == ConnectionState.Open)
-                {
-                    connection.Close();
-                }
-            }
+            finally { if (shouldClose && connection.State == ConnectionState.Open) connection.Close(); }
 
+            if (result.Items.Count > pageSize) { result.Items.RemoveAt(result.Items.Count - 1); result.HasMore = true; }
             return result;
         }
     }

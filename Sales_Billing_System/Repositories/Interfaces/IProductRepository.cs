@@ -19,10 +19,10 @@ namespace Sales_Billing_System.Repositories.Interfaces
 
         List<Product_Master> SearchProduct(string searchText);
 
-        PagedResult<Product_Master> GetProductsPaged(
-            int pageNumber,
+        PagedResult<Product_Master> GetProductsCursor(
             int pageSize,
-            string searchText);
+            string searchText,
+            int? lastId);
 
         // Lazy-load dropdown search
         List<Category_Master> SearchCategories(string term);

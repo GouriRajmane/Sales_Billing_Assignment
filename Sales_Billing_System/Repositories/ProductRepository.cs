@@ -175,157 +175,58 @@ namespace Sales_Billing_System.Repositories
                 .ToList();
         }
 
-        // Get paginated products using the MySQL stored procedure.
-        public PagedResult<Product_Master> GetProductsPaged(
-            int pageNumber,
-            int pageSize,
-            string searchText)
+        public PagedResult<Product_Master> GetProductsCursor(int pageSize, string searchText, int? lastId)
         {
-            var result = new PagedResult<Product_Master>();
-
-            result.CurrentPage = pageNumber;
-            result.PageSize = pageSize;
-
-            using (var connection =
-                (MySqlConnection)_context.Database.Connection)
-               
-            
+            var result = new PagedResult<Product_Master> { PageSize = pageSize };
+            var connection = (MySqlConnection)_context.Database.Connection;
+            bool shouldClose = connection.State != ConnectionState.Open;
+            try
             {
-                bool shouldClose = connection.State != ConnectionState.Open;
-
-                if (connection.State != ConnectionState.Open)
-                {
-                    connection.Open();
-                }
-
-                using (var command =
-                    new MySqlCommand("sp_GetProductsPaged", connection))
+                if (shouldClose) connection.Open();
+                using (var command = new MySqlCommand("sp_GetProductsCursor", connection))
                 {
                     command.CommandType = CommandType.StoredProcedure;
-
-                    command.Parameters.AddWithValue(
-                        "@p_PageNumber", pageNumber);
-
-                    command.Parameters.AddWithValue(
-                        "@p_PageSize", pageSize);
-
-                    command.Parameters.AddWithValue(
-                        "@p_SearchText",
-                        string.IsNullOrWhiteSpace(searchText)
-                            ? (object)DBNull.Value
-                            : searchText.Trim());
+                    command.Parameters.AddWithValue("@p_PageSize", pageSize);
+                    command.Parameters.AddWithValue("@p_SearchText", string.IsNullOrWhiteSpace(searchText) ? (object)DBNull.Value : searchText.Trim());
+                    command.Parameters.AddWithValue("@p_LastId", lastId.HasValue ? (object)lastId.Value : DBNull.Value);
 
                     using (var reader = command.ExecuteReader())
                     {
-                        // Result set 1: Product records.
+                        Func<string, string> text = n => reader[n] == DBNull.Value ? null : Convert.ToString(reader[n]);
+
                         while (reader.Read())
                         {
-                            var product = new Product_Master
+                            var p = new Product_Master
                             {
-                                ProductId = Convert.ToInt32(
-                                    reader["ProductId"]),
-
-                                ProductName =
-                                    reader["ProductName"] == DBNull.Value
-                                        ? null
-                                        : reader["ProductName"].ToString(),
-
-                                SKU = reader["SKU"] == DBNull.Value
-                                    ? null
-                                    : reader["SKU"].ToString(),
-
-                                Unit = reader["Unit"] == DBNull.Value
-                                    ? null
-                                    : reader["Unit"].ToString(),
-
-                                SellingPrice =
-                                    reader["SellingPrice"] == DBNull.Value
-                                        ? 0
-                                        : Convert.ToDecimal(
-                                            reader["SellingPrice"]),
-
-                                GSTPercentage =
-                                    reader["GSTPercentage"] == DBNull.Value
-                                        ? 0
-                                        : Convert.ToDecimal(
-                                            reader["GSTPercentage"]),
-
-                                IsActive =
-                                    reader["IsActive"] != DBNull.Value &&
-                                    Convert.ToBoolean(reader["IsActive"])
+                                ProductId = Convert.ToInt32(reader["ProductId"]),
+                                ProductName = text("ProductName"),
+                                SKU = text("SKU"),
+                                Unit = text("Unit"),
+                                SellingPrice = Convert.ToDecimal(reader["SellingPrice"]),
+                                GSTPercentage = Convert.ToDecimal(reader["GSTPercentage"]),
+                                IsActive = Convert.ToBoolean(reader["IsActive"]),
+                                CategoryId = Convert.ToInt32(reader["CategoryId"]),
+                                SubCategoryId = reader["SubCategoryId"] == DBNull.Value ? 0 : Convert.ToInt32(reader["SubCategoryId"])
                             };
-
-                            int categoryIdOrdinal =
-                                GetOrdinalIfExists(reader, "CategoryId");
-
-                            int categoryNameOrdinal =
-                                GetOrdinalIfExists(reader, "CategoryName");
-
-                            int subCategoryIdOrdinal =
-                                GetOrdinalIfExists(reader, "SubCategoryId");
-
-                            int subCategoryNameOrdinal =
-                                GetOrdinalIfExists(reader, "SubCategoryName");
-
-                            // Map category information when returned by the SP.
-                            if (categoryIdOrdinal >= 0 &&
-                                !reader.IsDBNull(categoryIdOrdinal))
-                            {
-                                product.CategoryId = Convert.ToInt32(
-                                    reader.GetValue(categoryIdOrdinal));
-                            }
-
-                            if (categoryNameOrdinal >= 0 &&
-                                !reader.IsDBNull(categoryNameOrdinal))
-                            {
-                                product.Category = new Category_Master
-                                {
-                                    CategoryId = product.CategoryId,
-                                    CategoryName = reader.GetString(
-                                        categoryNameOrdinal)
-                                };
-                            }
-
-                            // Map subcategory information when returned by the SP.
-                            if (subCategoryIdOrdinal >= 0 &&
-                                !reader.IsDBNull(subCategoryIdOrdinal))
-                            {
-                                product.SubCategoryId = Convert.ToInt32(
-                                    reader.GetValue(subCategoryIdOrdinal));
-                            }
-
-                            if (subCategoryNameOrdinal >= 0 &&
-                                !reader.IsDBNull(subCategoryNameOrdinal))
-                            {
-                                product.SubCategory =
-                                    new SubCategory_Master
-                                    {
-                                        SubCategoryId =
-                                            product.SubCategoryId,
-
-                                        CategoryId = product.CategoryId,
-
-                                        SubCategoryName = reader.GetString(
-                                            subCategoryNameOrdinal)
-                                    };
-                            }
-
-                            result.Items.Add(product);
+                            if (text("CategoryName") != null)
+                                p.Category = new Category_Master { CategoryId = p.CategoryId, CategoryName = text("CategoryName") };
+                            if (text("SubCategoryName") != null)
+                                p.SubCategory = new SubCategory_Master { SubCategoryId = p.SubCategoryId, CategoryId = p.CategoryId, SubCategoryName = text("SubCategoryName") };
+                            result.Items.Add(p);
                         }
 
-                        // Result set 2: Total matching record count.
-                        if (reader.NextResult() && reader.Read())
-                        {
-                            result.TotalRecords = Convert.ToInt32(
-                                reader["TotalRecords"]);
-                        }
+                        if (reader.NextResult())
+                            while (reader.Read())
+                                result.GroupCounts[Convert.ToInt32(reader["CategoryId"])] = Convert.ToInt32(reader["ProductCount"]);
                     }
                 }
             }
+            finally { if (shouldClose && connection.State == ConnectionState.Open) connection.Close(); }
 
+            result.TotalRecords = result.GroupCounts.Values.Sum();
+            if (result.Items.Count > pageSize) { result.Items.RemoveAt(result.Items.Count - 1); result.HasMore = true; }
             return result;
         }
-
         // Safely locate a column without assuming it exists in the result set.
         private int GetOrdinalIfExists(
             IDataRecord reader,

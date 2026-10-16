@@ -2,6 +2,7 @@
 using Sales_Billing_System.Services;
 using Sales_Billing_System.Services.Interfaces;
 using System;
+using System.Linq;
 using System.Web.Mvc;
 
 namespace Sales_Billing_System.Controllers
@@ -18,18 +19,10 @@ namespace Sales_Billing_System.Controllers
         // Customer Listing and Search
 
         // GET: Customer
-        public ActionResult Index(string searchText, int page = 1, int pageSize = 1000)
+        public ActionResult Index(string searchText)
         {
             ViewBag.SearchText = searchText;
-            ViewBag.PageSize = pageSize;
-
-            var customers =
-                _customerService.GetCustomersPaged(
-                    page,
-                    pageSize,
-                    searchText);
-
-            return View(customers);
+            return View();   // rows now arrive through LoadCustomers
         }
 
         // Customer Details - loads into modal
@@ -129,6 +122,25 @@ namespace Sales_Billing_System.Controllers
 
                 return PartialView(customer);
             }
+        }
+
+        [HttpGet]
+        public JsonResult LoadCustomers(string searchText, int? lastId, int pageSize = 20)
+        {
+            var r = _customerService.GetCustomersCursor(pageSize, searchText, lastId);
+
+            var items = r.Items.Select(c => new
+            {
+                id = c.CustomerId,
+                name = c.CustomerName,
+                gstin = c.GSTIN,
+                mobile = c.MobileNumber,
+                address = c.Address,
+                detailsUrl = Url.Action("Details", "Customer", new { id = c.CustomerId }),
+                editUrl = Url.Action("Edit", "Customer", new { id = c.CustomerId })
+            });
+
+            return Json(new { items, hasMore = r.HasMore, total = r.TotalRecords }, JsonRequestBehavior.AllowGet);
         }
     }
 }

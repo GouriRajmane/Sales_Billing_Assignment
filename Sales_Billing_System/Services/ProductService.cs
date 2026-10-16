@@ -123,30 +123,11 @@ namespace Sales_Billing_System.Services
             return _productRepository.SearchProduct(searchText);
         }
 
-        public PagedResult<Product_Master> GetProductsPaged(
-            int pageNumber,
-            int pageSize,
-            string searchText)
+        public PagedResult<Product_Master> GetProductsCursor(int pageSize, string searchText, int? lastId)
         {
-            if (pageNumber < 1)
-            {
-                pageNumber = 1;
-            }
-
-            if (pageSize <= 0)
-            {
-                pageSize = 10;
-            }
-
-            if (pageSize > 100)
-            {
-                pageSize = 100;
-            }
-
-            return _productRepository.GetProductsPaged(
-                pageNumber,
-                pageSize,
-                searchText);
+            if (pageSize < 1) pageSize = 20;
+            if (pageSize > 100) pageSize = 100;
+            return _productRepository.GetProductsCursor(pageSize, searchText, lastId);
         }
 
         // Category and subcategory must exist, be active,

@@ -502,34 +502,17 @@ namespace Sales_Billing_System.Services
             return _invoiceRepository.GetPrintInvoiceData(invoiceId);
         }
 
-        public PagedResult<Sales_Invoice> GetInvoicesPaged(
-            int pageNumber,
-            int pageSize,
-            string searchText,
-            DateTime? fromDate,
-            DateTime? toDate)
+            public PagedResult<Sales_Invoice> GetInvoicesCursor(int pageSize, string searchText, DateTime? fromDate, DateTime? toDate, DateTime? lastDate, int? lastId)
         {
-            if (pageNumber < 1)
-            {
-                pageNumber = 1;
-            }
-
-            if (pageSize <= 0)
-            {
-                pageSize = 10;
-            }
-
-            if (pageSize > 100)
-            {
-                pageSize = 100;
-            }
-
-            return _invoiceRepository.GetInvoicesPaged(
-                pageNumber,
+            if (pageSize < 1) pageSize = 20;
+            if (pageSize > 100) pageSize = 100;
+            return _invoiceRepository.GetInvoicesCursor(
                 pageSize,
                 searchText,
                 fromDate,
-                toDate);
+                toDate,
+                lastDate,
+                lastId);
         }
     }
 }

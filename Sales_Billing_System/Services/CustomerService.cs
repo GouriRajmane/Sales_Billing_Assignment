@@ -64,30 +64,11 @@ namespace Sales_Billing_System.Services
             return _customerRepository.SearchCustomers(searchText);
         }
 
-        public PagedResult<Customer_Master> GetCustomersPaged(
-            int pageNumber,
-            int pageSize,
-            string searchText)
+        public PagedResult<Customer_Master> GetCustomersCursor(int pageSize, string searchText, int? lastId)
         {
-            if (pageNumber < 1)
-            {
-                pageNumber = 1;
-            }
-
-            if (pageSize <= 0)
-            {
-                pageSize = 10;
-            }
-
-            if (pageSize > 100)
-            {
-                pageSize = 100;
-            }
-
-            return _customerRepository.GetCustomersPaged(
-                pageNumber,
-                pageSize,
-                searchText);
+            if (pageSize < 1) pageSize = 20;
+            if (pageSize > 100) pageSize = 100;
+            return _customerRepository.GetCustomersCursor(pageSize, searchText, lastId);
         }
     }
 }

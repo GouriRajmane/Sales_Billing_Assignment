@@ -28,24 +28,10 @@ namespace Sales_Billing_System.Controllers
         // =====================================================
 
         [HttpGet]
-        public ActionResult Index(string searchText, int page = 1, int pageSize = 1000)
-
+        public ActionResult Index(string searchText)
         {
-            if (page < 1)
-                page = 1;
-
-            if (pageSize < 1)
-                pageSize = 10;
-
-            var result = _productService.GetProductsPaged(
-                page,
-                pageSize,
-                searchText);
-
             ViewBag.SearchText = searchText;
-            ViewBag.PageSize = pageSize;
-
-            return View(result);
+            return View();   // rows now arrive through LoadProducts
         }
 
 
@@ -296,6 +282,38 @@ namespace Sales_Billing_System.Controllers
 
             ViewBag.SelectedSubCategoryName =
                 subCategory != null ? subCategory.SubCategoryName : null;
+        }
+
+
+        [HttpGet]
+        public JsonResult LoadProducts(string searchText, int? lastId, int pageSize = 20)
+        {
+            var r = _productService.GetProductsCursor(pageSize, searchText, lastId);
+
+            var items = r.Items.Select(p => new
+            {
+                id = p.ProductId,
+                categoryId = p.CategoryId,
+                category = p.Category != null ? p.Category.CategoryName : null,
+                subCategory = p.SubCategory != null ? p.SubCategory.SubCategoryName : null,
+                name = p.ProductName,
+                sku = p.SKU,
+                unit = p.Unit,
+                price = p.SellingPrice.ToString("N2"),
+                gst = p.GSTPercentage.ToString("N2"),
+                isActive = p.IsActive,
+                detailsUrl = Url.Action("Details", "Product", new { id = p.ProductId }),
+                editUrl = Url.Action("Edit", "Product", new { id = p.ProductId }),
+                toggleUrl = Url.Action("ConfirmToggleStatus", "Product", new { id = p.ProductId })
+            });
+
+            return Json(new
+            {
+                items,
+                hasMore = r.HasMore,
+                total = r.TotalRecords,
+                groups = r.GroupCounts.ToDictionary(g => g.Key.ToString(), g => g.Value)
+            }, JsonRequestBehavior.AllowGet);
         }
     }
 }

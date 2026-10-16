@@ -12,14 +12,12 @@ namespace Sales_Billing_System.Controllers
         private readonly ISalesInvoiceService _invoiceService = new SalesInvoiceService();
 
         // INDEX
-        public ActionResult Index(string searchText, DateTime? fromDate, DateTime? toDate, int page = 1, int pageSize = 1000)
+        public ActionResult Index(string searchText, DateTime? fromDate, DateTime? toDate)
         {
             ViewBag.SearchText = searchText;
             ViewBag.FromDate = fromDate;
             ViewBag.ToDate = toDate;
-            ViewBag.PageSize = pageSize;
-
-            return View(_invoiceService.GetInvoicesPaged(page, pageSize, searchText, fromDate, toDate));
+            return View();   // rows now arrive through LoadInvoices
         }
 
         // CREATE - GET (loads into modal)
@@ -109,6 +107,29 @@ namespace Sales_Billing_System.Controllers
                 .Select(p => new { id = p.ProductId, text = p.ProductName, rate = p.SellingPrice, gst = p.GSTPercentage });
 
             return Json(data, JsonRequestBehavior.AllowGet);
+        }
+
+
+        [HttpGet]
+        public JsonResult LoadInvoices(string searchText, DateTime? fromDate, DateTime? toDate, DateTime? lastDate, int? lastId, int pageSize = 20)
+        {
+            var r = _invoiceService.GetInvoicesCursor(pageSize, searchText, fromDate, toDate, lastDate, lastId);
+
+            var items = r.Items.Select(i => new
+            {
+                id = i.InvoiceId,
+                invoiceNumber = i.InvoiceNumber,
+                date = i.InvoiceDate.ToString("dd-MM-yyyy"),
+                cursorDate = i.InvoiceDate.ToString("yyyy-MM-dd HH:mm:ss"),
+                customer = i.Customer != null ? i.Customer.CustomerName : "",
+                total = i.GrandTotal.ToString("N2"),
+                status = i.Status,
+                detailsUrl = Url.Action("Details", "SalesInvoice", new { id = i.InvoiceId }),
+                printUrl = Url.Action("Print", "SalesInvoice", new { id = i.InvoiceId }),
+                cancelUrl = Url.Action("ConfirmCancel", "SalesInvoice", new { id = i.InvoiceId })
+            });
+
+            return Json(new { items, hasMore = r.HasMore, total = r.TotalRecords }, JsonRequestBehavior.AllowGet);
         }
     }
 }

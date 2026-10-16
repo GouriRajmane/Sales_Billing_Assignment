@@ -24,13 +24,13 @@ namespace Sales_Billing_System.Repositories.Interfaces
 
         // New method for fetching print page data
         Sales_Invoice GetPrintInvoiceData(int invoiceId);
-
-        PagedResult<Sales_Invoice> GetInvoicesPaged(
-            int pageNumber,
+        PagedResult<Sales_Invoice> GetInvoicesCursor(
             int pageSize,
             string searchText,
             DateTime? fromDate,
-            DateTime? toDate);
+            DateTime? toDate,
+            DateTime? lastDate,
+            int? lastId);
 
         List<Customer_Master> SearchCustomers(string term);
 
