@@ -31,7 +31,13 @@ namespace Sales_Billing_System.Repositories.Interfaces
             string searchText,
             DateTime? fromDate,
             DateTime? toDate);
-
+        PagedResult<Sales_Invoice> GetInvoicesCursor(
+            int pageSize,
+            string searchText,
+            DateTime? fromDate,
+            DateTime? toDate,
+            DateTime? lastDate,
+            int? lastId);
         List<Customer_Master> SearchCustomers(string term);
 
         List<Product_Master> SearchProducts(string term);

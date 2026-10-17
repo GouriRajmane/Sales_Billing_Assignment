@@ -22,6 +22,71 @@ namespace Sales_Billing_System.Controllers
             return View(_invoiceService.GetInvoicesPaged(page, pageSize, searchText, fromDate, toDate));
         }
 
+        //public ActionResult Index(string searchText, DateTime? fromDate, DateTime? toDate)
+        //{
+        //    ViewBag.SearchText = searchText; 
+        //    ViewBag.FromDate = fromDate;
+        //    ViewBag.ToDate = toDate;
+        //    return View();   // rows now arrive through LoadInvoices
+        //}
+
+        public ActionResult Compare() { return View(); }
+
+        [HttpGet]
+        public JsonResult LoadInvoicesPage(string searchText, DateTime? fromDate, DateTime? toDate, int page = 1, int pageSize = 10)
+        {
+            if (page < 1) page = 1;
+            var r = _invoiceService.GetInvoicesPaged(page, pageSize, searchText, fromDate, toDate);
+            int size = r.PageSize > 0 ? r.PageSize : pageSize;
+
+            return Json(new
+            {
+                items = r.Items.Select(InvoiceRow),
+                page,
+                total = r.TotalRecords,
+                totalPages = (int)Math.Ceiling((double)r.TotalRecords / size)
+            }, JsonRequestBehavior.AllowGet);
+        }
+
+        private object InvoiceRow(Sales_Invoice i)
+        {
+            return new
+            {
+                id = i.InvoiceId,
+                invoiceNumber = i.InvoiceNumber,
+                date = i.InvoiceDate.ToString("dd-MM-yyyy"),
+                cursorDate = i.InvoiceDate.ToString("yyyy-MM-dd HH:mm:ss"),
+                customer = i.Customer != null ? i.Customer.CustomerName : "",
+                total = i.GrandTotal.ToString("N2"),
+                status = i.Status,
+                detailsUrl = Url.Action("Details", "SalesInvoice", new { id = i.InvoiceId }),
+                printUrl = Url.Action("Print", "SalesInvoice", new { id = i.InvoiceId }),
+                cancelUrl = Url.Action("ConfirmCancel", "SalesInvoice", new { id = i.InvoiceId })
+            };
+        }
+
+        [HttpGet]
+        public JsonResult LoadInvoices(string searchText, DateTime? fromDate, DateTime? toDate, DateTime? lastDate, int? lastId, int pageSize = 20)
+        {
+            var r = _invoiceService.GetInvoicesCursor(pageSize, searchText, fromDate, toDate, lastDate, lastId);
+
+            var items = r.Items.Select(i => new
+            {
+                id = i.InvoiceId,
+                invoiceNumber = i.InvoiceNumber,
+                date = i.InvoiceDate.ToString("dd-MM-yyyy"),
+                cursorDate = i.InvoiceDate.ToString("yyyy-MM-dd HH:mm:ss"),
+                customer = i.Customer != null ? i.Customer.CustomerName : "",
+                total = i.GrandTotal.ToString("N2"),
+                status = i.Status,
+                detailsUrl = Url.Action("Details", "SalesInvoice", new { id = i.InvoiceId }),
+                printUrl = Url.Action("Print", "SalesInvoice", new { id = i.InvoiceId }),
+                cancelUrl = Url.Action("ConfirmCancel", "SalesInvoice", new { id = i.InvoiceId })
+            });
+
+            return Json(new { items, hasMore = r.HasMore, total = r.TotalRecords }, JsonRequestBehavior.AllowGet);
+        }
+
         // CREATE - GET (loads into modal)
         [HttpGet]
         public ActionResult Create()

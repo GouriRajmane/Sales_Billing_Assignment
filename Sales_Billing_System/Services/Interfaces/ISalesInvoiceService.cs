@@ -24,6 +24,13 @@ namespace Sales_Billing_System.Services.Interfaces
 
         Sales_Invoice GetPrintInvoiceData(int invoiceId);
 
+        PagedResult<Sales_Invoice> GetInvoicesCursor(
+            int pageSize,
+            string searchText,
+            DateTime? fromDate,
+            DateTime? toDate,
+            DateTime? lastDate,
+            int? lastId);
         PagedResult<Sales_Invoice> GetInvoicesPaged(
             int pageNumber,
             int pageSize,

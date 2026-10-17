@@ -251,6 +251,228 @@ namespace Sales_Billing_System.Repositories
                    nextNumber.ToString("D5");
         }
 
+        public PagedResult<Sales_Invoice> GetInvoicesCursor(int pageSize, string searchText, DateTime? fromDate, DateTime? toDate, DateTime? lastDate, int? lastId)
+        {
+            var result = new PagedResult<Sales_Invoice> { PageSize = pageSize };
+            var connection = (MySqlConnection)_context.Database.Connection;
+            bool shouldClose = connection.State != ConnectionState.Open;
+            try
+            {
+                if (shouldClose) connection.Open();
+                using (var command = new MySqlCommand("sp_GetInvoicesCursor", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@p_PageSize", pageSize);
+                    command.Parameters.AddWithValue("@p_SearchText", string.IsNullOrWhiteSpace(searchText) ? (object)DBNull.Value : searchText.Trim());
+                    command.Parameters.AddWithValue("@p_FromDate", fromDate.HasValue ? (object)fromDate.Value.Date : DBNull.Value);
+                    command.Parameters.AddWithValue("@p_ToDate", toDate.HasValue ? (object)toDate.Value.Date : DBNull.Value);
+                    command.Parameters.AddWithValue("@p_LastDate", lastDate.HasValue ? (object)lastDate.Value : DBNull.Value);
+                    command.Parameters.AddWithValue("@p_LastId", lastId.HasValue ? (object)lastId.Value : DBNull.Value);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                            result.Items.Add(new Sales_Invoice
+                            {
+                                InvoiceId = Convert.ToInt32(reader["InvoiceId"]),
+                                InvoiceNumber = Convert.ToString(reader["InvoiceNumber"]),
+                                InvoiceDate = Convert.ToDateTime(reader["InvoiceDate"]),
+                                CustomerId = Convert.ToInt32(reader["CustomerId"]),
+                                GrandTotal = Convert.ToDecimal(reader["GrandTotal"]),
+                                Status = Convert.ToString(reader["Status"]),
+                                Customer = new Customer_Master { CustomerId = Convert.ToInt32(reader["CustomerId"]), CustomerName = Convert.ToString(reader["CustomerName"]) }
+                            });
+
+                        if (reader.NextResult() && reader.Read())
+                            result.TotalRecords = Convert.ToInt32(reader["TotalRecords"]);
+                    }
+                }
+            }
+            finally { if (shouldClose && connection.State == ConnectionState.Open) connection.Close(); }
+
+            if (result.Items.Count > pageSize) { result.Items.RemoveAt(result.Items.Count - 1); result.HasMore = true; }
+            return result;
+        }
+       
+    public PagedResult<Sales_Invoice> GetInvoicesPaged(
+        int pageNumber,
+        int pageSize,
+        string searchText,
+        DateTime? fromDate,
+        DateTime? toDate)
+            {
+            var result =
+                new PagedResult<Sales_Invoice>();
+
+            result.CurrentPage = pageNumber;
+            result.PageSize = pageSize;
+
+            var connection =
+                (MySqlConnection)_context.Database.Connection;
+
+            bool shouldCloseConnection =
+                connection.State != ConnectionState.Open;
+
+            try
+            {
+                if (shouldCloseConnection)
+                {
+                    connection.Open();
+                }
+
+                using (MySqlCommand command =
+                    new MySqlCommand(
+                        "sp_GetInvoicesPaged",
+                        connection))
+                {
+                    command.CommandType =
+                        CommandType.StoredProcedure;
+
+                    // -----------------------------------------
+                    // PAGE NUMBER
+                    // -----------------------------------------
+
+                    command.Parameters.AddWithValue(
+                        "@p_PageNumber",
+                        pageNumber);
+
+
+                    // -----------------------------------------
+                    // PAGE SIZE
+                    // -----------------------------------------
+
+                    command.Parameters.AddWithValue(
+                        "@p_PageSize",
+                        pageSize);
+
+
+                    // -----------------------------------------
+                    // SEARCH TEXT
+                    // -----------------------------------------
+
+                    command.Parameters.AddWithValue(
+                        "@p_SearchText",
+                        string.IsNullOrWhiteSpace(searchText)
+                            ? (object)DBNull.Value
+                            : searchText.Trim());
+
+
+                    // -----------------------------------------
+                    // FROM DATE
+                    // -----------------------------------------
+
+                    command.Parameters.AddWithValue(
+                        "@p_FromDate",
+                        fromDate.HasValue
+                            ? (object)fromDate.Value.Date
+                            : DBNull.Value);
+
+
+                    // -----------------------------------------
+                    // TO DATE
+                    // -----------------------------------------
+
+                    command.Parameters.AddWithValue(
+                        "@p_ToDate",
+                        toDate.HasValue
+                            ? (object)toDate.Value.Date
+                            : DBNull.Value);
+
+
+                    using (MySqlDataReader reader =
+                        command.ExecuteReader())
+                    {
+                        // =====================================
+                        // RESULT SET 1
+                        // INVOICE DATA
+                        // =====================================
+
+                        while (reader.Read())
+                        {
+                            Sales_Invoice invoice =
+                                new Sales_Invoice
+                                {
+                                    InvoiceId =
+                                        Convert.ToInt32(
+                                            reader["InvoiceId"]),
+
+                                    InvoiceNumber =
+                                        Convert.ToString(
+                                            reader["InvoiceNumber"]),
+
+                                    InvoiceDate =
+                                        Convert.ToDateTime(
+                                            reader["InvoiceDate"]),
+
+                                    CustomerId =
+                                        Convert.ToInt32(
+                                            reader["CustomerId"]),
+
+                                    TotalTaxableAmount =
+                                        Convert.ToDecimal(
+                                            reader["TotalTaxableAmount"]),
+
+                                    TotalGSTAmount =
+                                        Convert.ToDecimal(
+                                            reader["TotalGSTAmount"]),
+
+                                    GrandTotal =
+                                        Convert.ToDecimal(
+                                            reader["GrandTotal"]),
+
+                                    Status =
+                                        Convert.ToString(
+                                            reader["Status"]),
+
+                                    CreatedAt =
+                                        Convert.ToDateTime(
+                                            reader["CreatedAt"]),
+
+                                    Customer =
+                                        new Customer_Master
+                                        {
+                                            CustomerId =
+                                                Convert.ToInt32(
+                                                    reader["CustomerId"]),
+
+                                            CustomerName =
+                                                Convert.ToString(
+                                                    reader["CustomerName"])
+                                        }
+                                };
+
+                            result.Items.Add(invoice);
+                        }
+
+
+                        // =====================================
+                        // RESULT SET 2
+                        // TOTAL RECORDS
+                        // =====================================
+
+                        if (reader.NextResult() &&
+                            reader.Read())
+                        {
+                            result.TotalRecords =
+                                Convert.ToInt32(
+                                    reader["TotalRecords"]);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                if (shouldCloseConnection &&
+                    connection.State ==
+                        ConnectionState.Open)
+                {
+                    connection.Close();
+                }
+            }
+
+            return result;
+        }
+
         public Sales_Invoice GetPrintInvoiceData(int invoiceId)
         {
             Sales_Invoice invoice = null;
@@ -430,183 +652,5 @@ namespace Sales_Billing_System.Repositories
             return invoice;
         }
 
-    public PagedResult<Sales_Invoice> GetInvoicesPaged(
-        int pageNumber,
-        int pageSize,
-        string searchText,
-        DateTime? fromDate,
-        DateTime? toDate)
-            {
-            var result =
-                new PagedResult<Sales_Invoice>();
-
-            result.CurrentPage = pageNumber;
-            result.PageSize = pageSize;
-
-            var connection =
-                (MySqlConnection)_context.Database.Connection;
-
-            bool shouldCloseConnection =
-                connection.State != ConnectionState.Open;
-
-            try
-            {
-                if (shouldCloseConnection)
-                {
-                    connection.Open();
-                }
-
-                using (MySqlCommand command =
-                    new MySqlCommand(
-                        "sp_GetInvoicesPaged",
-                        connection))
-                {
-                    command.CommandType =
-                        CommandType.StoredProcedure;
-
-                    // -----------------------------------------
-                    // PAGE NUMBER
-                    // -----------------------------------------
-
-                    command.Parameters.AddWithValue(
-                        "@p_PageNumber",
-                        pageNumber);
-
-
-                    // -----------------------------------------
-                    // PAGE SIZE
-                    // -----------------------------------------
-
-                    command.Parameters.AddWithValue(
-                        "@p_PageSize",
-                        pageSize);
-
-
-                    // -----------------------------------------
-                    // SEARCH TEXT
-                    // -----------------------------------------
-
-                    command.Parameters.AddWithValue(
-                        "@p_SearchText",
-                        string.IsNullOrWhiteSpace(searchText)
-                            ? (object)DBNull.Value
-                            : searchText.Trim());
-
-
-                    // -----------------------------------------
-                    // FROM DATE
-                    // -----------------------------------------
-
-                    command.Parameters.AddWithValue(
-                        "@p_FromDate",
-                        fromDate.HasValue
-                            ? (object)fromDate.Value.Date
-                            : DBNull.Value);
-
-
-                    // -----------------------------------------
-                    // TO DATE
-                    // -----------------------------------------
-
-                    command.Parameters.AddWithValue(
-                        "@p_ToDate",
-                        toDate.HasValue
-                            ? (object)toDate.Value.Date
-                            : DBNull.Value);
-
-
-                    using (MySqlDataReader reader =
-                        command.ExecuteReader())
-                    {
-                        // =====================================
-                        // RESULT SET 1
-                        // INVOICE DATA
-                        // =====================================
-
-                        while (reader.Read())
-                        {
-                            Sales_Invoice invoice =
-                                new Sales_Invoice
-                                {
-                                    InvoiceId =
-                                        Convert.ToInt32(
-                                            reader["InvoiceId"]),
-
-                                    InvoiceNumber =
-                                        Convert.ToString(
-                                            reader["InvoiceNumber"]),
-
-                                    InvoiceDate =
-                                        Convert.ToDateTime(
-                                            reader["InvoiceDate"]),
-
-                                    CustomerId =
-                                        Convert.ToInt32(
-                                            reader["CustomerId"]),
-
-                                    TotalTaxableAmount =
-                                        Convert.ToDecimal(
-                                            reader["TotalTaxableAmount"]),
-
-                                    TotalGSTAmount =
-                                        Convert.ToDecimal(
-                                            reader["TotalGSTAmount"]),
-
-                                    GrandTotal =
-                                        Convert.ToDecimal(
-                                            reader["GrandTotal"]),
-
-                                    Status =
-                                        Convert.ToString(
-                                            reader["Status"]),
-
-                                    CreatedAt =
-                                        Convert.ToDateTime(
-                                            reader["CreatedAt"]),
-
-                                    Customer =
-                                        new Customer_Master
-                                        {
-                                            CustomerId =
-                                                Convert.ToInt32(
-                                                    reader["CustomerId"]),
-
-                                            CustomerName =
-                                                Convert.ToString(
-                                                    reader["CustomerName"])
-                                        }
-                                };
-
-                            result.Items.Add(invoice);
-                        }
-
-
-                        // =====================================
-                        // RESULT SET 2
-                        // TOTAL RECORDS
-                        // =====================================
-
-                        if (reader.NextResult() &&
-                            reader.Read())
-                        {
-                            result.TotalRecords =
-                                Convert.ToInt32(
-                                    reader["TotalRecords"]);
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                if (shouldCloseConnection &&
-                    connection.State ==
-                        ConnectionState.Open)
-                {
-                    connection.Close();
-                }
-            }
-
-            return result;
-        }
     }
 }
