@@ -175,6 +175,59 @@ namespace Sales_Billing_System.Repositories
                 .ToList();
         }
 
+        public PagedResult<Product_Master> GetProductsCursor(int pageSize, string searchText, int? lastId)
+        {
+            var result = new PagedResult<Product_Master> { PageSize = pageSize };
+            var connection = (MySqlConnection)_context.Database.Connection;
+            bool shouldClose = connection.State != ConnectionState.Open;
+            try
+            {
+                if (shouldClose) connection.Open();
+                using (var command = new MySqlCommand("sp_GetProductsCursor", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@p_PageSize", pageSize);
+                    command.Parameters.AddWithValue("@p_SearchText", string.IsNullOrWhiteSpace(searchText) ? (object)DBNull.Value : searchText.Trim());
+                    command.Parameters.AddWithValue("@p_LastId", lastId.HasValue ? (object)lastId.Value : DBNull.Value);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        Func<string, string> text = n => reader[n] == DBNull.Value ? null : Convert.ToString(reader[n]);
+
+                        while (reader.Read())
+                        {
+                            var p = new Product_Master
+                            {
+                                ProductId = Convert.ToInt32(reader["ProductId"]),
+                                ProductName = text("ProductName"),
+                                SKU = text("SKU"),
+                                Unit = text("Unit"),
+                                SellingPrice = Convert.ToDecimal(reader["SellingPrice"]),
+                                GSTPercentage = Convert.ToDecimal(reader["GSTPercentage"]),
+                                IsActive = Convert.ToBoolean(reader["IsActive"]),
+                                CategoryId = Convert.ToInt32(reader["CategoryId"]),
+                                SubCategoryId = reader["SubCategoryId"] == DBNull.Value ? 0 : Convert.ToInt32(reader["SubCategoryId"])
+                            };
+                            if (text("CategoryName") != null)
+                                p.Category = new Category_Master { CategoryId = p.CategoryId, CategoryName = text("CategoryName") };
+                            if (text("SubCategoryName") != null)
+                                p.SubCategory = new SubCategory_Master { SubCategoryId = p.SubCategoryId, CategoryId = p.CategoryId, SubCategoryName = text("SubCategoryName") };
+                            result.Items.Add(p);
+                        }
+
+                        if (reader.NextResult())
+                            while (reader.Read())
+                                result.GroupCounts[Convert.ToInt32(reader["CategoryId"])] = Convert.ToInt32(reader["ProductCount"]);
+                    }
+                }
+            }
+            finally { if (shouldClose && connection.State == ConnectionState.Open) connection.Close(); }
+
+            result.TotalRecords = result.GroupCounts.Values.Sum();
+            if (result.Items.Count > pageSize) { result.Items.RemoveAt(result.Items.Count - 1); result.HasMore = true; }
+            return result;
+        }
+
         // Get paginated products using the MySQL stored procedure.
         public PagedResult<Product_Master> GetProductsPaged(
             int pageNumber,
@@ -319,6 +372,12 @@ namespace Sales_Billing_System.Repositories
                             result.TotalRecords = Convert.ToInt32(
                                 reader["TotalRecords"]);
                         }
+                        // Result set 3: products per category, for the group headers
+                        if (reader.NextResult())
+                            while (reader.Read())
+                                result.GroupCounts[Convert.ToInt32(
+                                    reader["CategoryId"])] = Convert.ToInt32(
+                                        reader["ProductCount"]);
                     }
                 }
             }

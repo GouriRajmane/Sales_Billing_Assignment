@@ -24,6 +24,12 @@ namespace Sales_Billing_System.Services.Interfaces
             int pageSize,
             string searchText);
 
+        PagedResult<Product_Master> GetProductsCursor(
+            int pageSize,
+            string searchText,
+            int? lastId);
+
+
         // Lazy-load dropdown search
         List<Category_Master> SearchCategories(string term);
 

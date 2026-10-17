@@ -19,5 +19,10 @@ namespace Sales_Billing_System.Repositories.Interfaces
             int pageNumber,
             int pageSize,
             string searchText);
+
+        PagedResult<Customer_Master> GetCustomersCursor(
+            int pageSize,
+            string searchText,
+            int? lastId);
     }
 }

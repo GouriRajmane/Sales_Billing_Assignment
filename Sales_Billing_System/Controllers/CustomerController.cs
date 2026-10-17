@@ -2,6 +2,7 @@
 using Sales_Billing_System.Services;
 using Sales_Billing_System.Services.Interfaces;
 using System;
+using System.Linq;
 using System.Web.Mvc;
 
 namespace Sales_Billing_System.Controllers
@@ -32,6 +33,56 @@ namespace Sales_Billing_System.Controllers
             return View(customers);
         }
 
+        public ActionResult Compare() { return View(); }
+
+        [HttpGet]
+        public JsonResult LoadCustomersPage(string searchText, int page = 1, int pageSize = 10)
+        {
+            if (page < 1) page = 1;
+            var r = _customerService.GetCustomersPaged(page, pageSize, searchText);
+            int size = r.PageSize > 0 ? r.PageSize : pageSize;
+
+            return Json(new
+            {
+                items = r.Items.Select(c => CustomerRow(c)),
+                page,
+                total = r.TotalRecords,
+                totalPages = (int)Math.Ceiling((double)r.TotalRecords / size)
+            }, JsonRequestBehavior.AllowGet);
+        }
+
+        private object CustomerRow(Customer_Master c)
+        {
+            return new
+            {
+                id = c.CustomerId,
+                name = c.CustomerName,
+                gstin = c.GSTIN,
+                mobile = c.MobileNumber,
+                address = c.Address,
+                detailsUrl = Url.Action("Details", "Customer", new { id = c.CustomerId }),
+                editUrl = Url.Action("Edit", "Customer", new { id = c.CustomerId })
+            };
+        }
+
+        [HttpGet]
+        public JsonResult LoadCustomers(string searchText, int? lastId, int pageSize = 20)
+        {
+            var r = _customerService.GetCustomersCursor(pageSize, searchText, lastId);
+
+            var items = r.Items.Select(c => new
+            {
+                id = c.CustomerId,
+                name = c.CustomerName,
+                gstin = c.GSTIN,
+                mobile = c.MobileNumber,
+                address = c.Address,
+                detailsUrl = Url.Action("Details", "Customer", new { id = c.CustomerId }),
+                editUrl = Url.Action("Edit", "Customer", new { id = c.CustomerId })
+            });
+
+            return Json(new { items, hasMore = r.HasMore, total = r.TotalRecords }, JsonRequestBehavior.AllowGet);
+        }
         // Customer Details - loads into modal
         [HttpGet]
         public ActionResult Details(int id)

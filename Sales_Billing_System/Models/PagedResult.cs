@@ -15,6 +15,8 @@ namespace Sales_Billing_System.Models
 
         public bool HasMore { get; set; }
 
+        public Dictionary<int, int> GroupCounts { get; set; }   // categoryId -> product count
+                                                              
         public int TotalPages
         {
             get
@@ -31,6 +33,7 @@ namespace Sales_Billing_System.Models
         public PagedResult()
         {
             Items = new List<T>();
+            GroupCounts = new Dictionary<int, int>();
         }
     }
 }

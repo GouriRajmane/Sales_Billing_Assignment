@@ -50,6 +50,76 @@ namespace Sales_Billing_System.Controllers
 
 
 
+        [HttpGet]
+        public JsonResult LoadProducts(string searchText, int? lastId, int pageSize = 20)
+        {
+            var r = _productService.GetProductsCursor(pageSize, searchText, lastId);
+
+            var items = r.Items.Select(p => new
+            {
+                id = p.ProductId,
+                categoryId = p.CategoryId,
+                category = p.Category != null ? p.Category.CategoryName : null,
+                subCategory = p.SubCategory != null ? p.SubCategory.SubCategoryName : null,
+                name = p.ProductName,
+                sku = p.SKU,
+                unit = p.Unit,
+                price = p.SellingPrice.ToString("N2"),
+                gst = p.GSTPercentage.ToString("N2"),
+                isActive = p.IsActive,
+                detailsUrl = Url.Action("Details", "Product", new { id = p.ProductId }),
+                editUrl = Url.Action("Edit", "Product", new { id = p.ProductId }),
+                toggleUrl = Url.Action("ConfirmToggleStatus", "Product", new { id = p.ProductId })
+            });
+
+            return Json(new
+            {
+                items,
+                hasMore = r.HasMore,
+                total = r.TotalRecords,
+              
+                groups = r.GroupCounts.ToDictionary(g => g.Key.ToString(), g => g.Value),
+             
+            }, JsonRequestBehavior.AllowGet);
+        }
+
+        public ActionResult Compare() { return View(); }
+
+        [HttpGet]
+        public JsonResult LoadProductsPage(string searchText, int page = 1, int pageSize = 10)
+        {
+            if (page < 1) page = 1;
+            var r = _productService.GetProductsPaged(page, pageSize, searchText);
+            int size = r.PageSize > 0 ? r.PageSize : pageSize;
+
+            return Json(new
+            {
+                items = r.Items.Select(p => ProductRow(p)),
+                page,
+                total = r.TotalRecords,
+                totalPages = (int)Math.Ceiling((double)r.TotalRecords / size)
+            }, JsonRequestBehavior.AllowGet);
+        }
+
+        private object ProductRow(Product_Master p)
+        {
+            return new
+            {
+                id = p.ProductId,
+                categoryId = p.CategoryId,
+                category = p.Category != null ? p.Category.CategoryName : null,
+                subCategory = p.SubCategory != null ? p.SubCategory.SubCategoryName : null,
+                name = p.ProductName,
+                sku = p.SKU,
+                unit = p.Unit,
+                price = p.SellingPrice.ToString("N2"),
+                gst = p.GSTPercentage.ToString("N2"),
+                isActive = p.IsActive,
+                detailsUrl = Url.Action("Details", "Product", new { id = p.ProductId }),
+                editUrl = Url.Action("Edit", "Product", new { id = p.ProductId }),
+                toggleUrl = Url.Action("ConfirmToggleStatus", "Product", new { id = p.ProductId })
+            };
+        }
         // =====================================================
         // LAZY-LOAD DROPDOWN SEARCH (returns { results: [{id, text}] })
         // =====================================================

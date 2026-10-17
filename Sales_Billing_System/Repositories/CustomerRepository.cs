@@ -75,6 +75,45 @@ namespace Sales_Billing_System.Repositories
                            .ToList();
         }
 
+        public PagedResult<Customer_Master> GetCustomersCursor(int pageSize, string searchText, int? lastId)
+        {
+            var result = new PagedResult<Customer_Master> { PageSize = pageSize };
+            var connection = (MySqlConnection)_context.Database.Connection;
+            bool shouldClose = connection.State != ConnectionState.Open;
+            try
+            {
+                if (shouldClose) connection.Open();
+                using (var command = new MySqlCommand("sp_GetCustomersCursor", connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.Parameters.AddWithValue("@p_PageSize", pageSize);
+                    command.Parameters.AddWithValue("@p_SearchText", string.IsNullOrWhiteSpace(searchText) ? (object)DBNull.Value : searchText.Trim());
+                    command.Parameters.AddWithValue("@p_LastId", lastId.HasValue ? (object)lastId.Value : DBNull.Value);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        Func<string, string> text = n => reader[n] == DBNull.Value ? null : Convert.ToString(reader[n]);
+
+                        while (reader.Read())
+                            result.Items.Add(new Customer_Master
+                            {
+                                CustomerId = Convert.ToInt32(reader["CustomerId"]),
+                                CustomerName = text("CustomerName"),
+                                MobileNumber = text("MobileNumber"),
+                                Address = text("Address"),
+                                GSTIN = text("GSTIN")
+                            });
+
+                        if (reader.NextResult() && reader.Read())
+                            result.TotalRecords = Convert.ToInt32(reader["TotalRecords"]);
+                    }
+                }
+            }
+            finally { if (shouldClose && connection.State == ConnectionState.Open) connection.Close(); }
+
+            if (result.Items.Count > pageSize) { result.Items.RemoveAt(result.Items.Count - 1); result.HasMore = true; }
+            return result;
+        }
         public PagedResult<Customer_Master> GetCustomersPaged(
             int pageNumber,
             int pageSize,

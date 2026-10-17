@@ -1,0 +1,349 @@
+﻿@{
+    ViewBag.Title = "Customers - Pagination Modes";
+}
+
+<style>
+    #customersTable thead th {
+        font-size: .78rem;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    #customersTable tbody td {
+        vertical-align: middle;
+        padding-top: .65rem;
+        padding-bottom: .65rem;
+    }
+
+    #customersTable tbody tr {
+        animation: rowIn .25s ease-out;
+    }
+
+    #modeSwitch .btn-check:checked + .btn {
+        background-color: #198754;
+        border-color: #198754;
+        color: #fff;
+    }
+
+    .page-item.active .page-link {
+        background-color: #198754;
+        border-color: #198754;
+        color: #fff;
+    }
+
+    .page-link {
+        color: #198754;
+    }
+
+    @@keyframes rowIn {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+</style>
+
+<div class="container mt-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1">Customer Master</h2>
+            <p class="text-muted mb-0">Compare numbered pages (offset) with infinite scroll (cursor) on the same data.</p>
+        </div>
+        <button type="button" class="btn btn-success btn-modal" data-url="@Url.Action("Create", "Customer")">
+            <i class="bi bi-plus-circle me-1"></i> Add Customer
+        </button>
+    </div>
+
+    <!-- Mode switch -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-3">
+            <div id="modeSwitch" class="btn-group" role="group" aria-label="Pagination mode">
+                <input type="radio" class="btn-check" name="mode" id="modeOffset" value="offset" autocomplete="off" checked />
+                <label class="btn btn-outline-success" for="modeOffset"><i class="bi bi-list-ol me-1"></i> Page numbers (Offset)</label>
+                <input type="radio" class="btn-check" name="mode" id="modeCursor" value="cursor" autocomplete="off" />
+                <label class="btn btn-outline-success" for="modeCursor"><i class="bi bi-arrow-down-circle me-1"></i> Infinite scroll (Cursor)</label>
+            </div>
+            <div id="modeNote" class="small text-muted flex-grow-1"></div>
+            <span id="statInfo" class="badge text-bg-light border"></span>
+        </div>
+    </div>
+
+    <div id="alertPlaceholder">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">@TempData["ErrorMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        }
+    </div>
+
+    <!-- Search (shared by both modes) -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form id="filterForm" autocomplete="off">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-9">
+                        <label class="form-label"><strong>Search</strong></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input type="text" id="searchText" class="form-control" placeholder="Enter customer name, mobile number, GSTIN or address" />
+                        </div>
+                    </div>
+                    <div class="col-md-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-search me-1"></i> Search</button>
+                        <button type="button" id="resetBtn" class="btn btn-outline-secondary" title="Reset filters"><i class="bi bi-arrow-counterclockwise"></i></button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Customer list -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div id="countInfo" class="text-muted small"></div>
+                <div id="pageSizeBox" class="d-flex align-items-center gap-2 small text-muted">
+                    Show
+                    <select id="pageSize" class="form-select form-select-sm" style="width:auto;">
+                        <option>10</option>
+                        <option>25</option>
+                        <option>50</option>
+                        <option>100</option>
+                    </select>
+                    entries
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table id="customersTable" class="table table-hover align-middle table-bordered mb-0">
+                    <thead class="table-success">
+                        <tr>
+                            <th class="text-center" style="width:60px;">Sr. No.</th>
+                            <th>Customer Name</th>
+                            <th>GSTIN</th>
+                            <th>Mobile Number</th>
+                            <th>Address</th>
+                            <th class="text-center" style="width:110px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customerBody"></tbody>
+                </table>
+            </div>
+
+            <div id="emptyState" class="text-center text-muted py-5 d-none">
+                <i class="bi bi-inbox fs-2"></i>
+                <h5 class="mt-2 mb-1">No Customers Found</h5>
+                <p class="mb-0">Try another search or add a new customer.</p>
+            </div>
+
+            <!-- Offset mode: numbered pager -->
+            <nav id="pagerWrap" class="mt-3"><ul id="pager" class="pagination pagination-sm justify-content-center mb-0"></ul></nav>
+
+            <!-- Cursor mode: scroll sentinel -->
+            <div id="scrollSentinel" class="text-center text-muted small py-3 d-none">
+                <span id="spinner" class="d-none"><span class="spinner-border spinner-border-sm text-success me-2"></span>Loading more customers...</span>
+                <span id="endMsg" class="d-none"><i class="bi bi-check2-circle me-1"></i>You're all caught up</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Shared Modal (Create / Edit / Details load here) -->
+<div class="modal fade" id="appModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" id="appModalDialog">
+        <div class="modal-content" id="appModalContent"></div>
+    </div>
+</div>
+
+@section Scripts
+{
+    @Scripts.Render("~/bundles/jqueryval")
+
+    <script>
+        $(function () {
+            $.ajaxSetup({ cache: false });
+
+            var modalEl = document.getElementById('appModal'), modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            var $dialog = $('#appModalDialog'), $content = $('#appModalContent');
+            var $body = $('#customerBody'), $empty = $('#emptyState'), $info = $('#countInfo'), $stat = $('#statInfo'), $note = $('#modeNote');
+            var $pager = $('#pager'), $pagerWrap = $('#pagerWrap'), $pageSizeBox = $('#pageSizeBox');
+            var $sentinel = $('#scrollSentinel'), $spin = $('#spinner'), $end = $('#endMsg'), sentinel = $sentinel[0];
+            var CURSOR_BATCH = 20;
+            var pageUrl = '@Url.Action("LoadCustomersPage", "Customer")';     // offset -> sp_GetCustomersPaged
+            var cursorUrl = '@Url.Action("LoadCustomers", "Customer")';       // cursor -> sp_GetCustomersCursor
+
+            var notes = {
+                offset: '<strong>Offset:</strong> LIMIT/OFFSET. Jump to any page and see the total page count; gets slower on very deep pages and can shift if rows are added while browsing.',
+                cursor: '<strong>Cursor:</strong> "next rows after the last one you have", A-Z by name. Constant speed at any depth and stable while data changes; forward-only.'
+            };
+
+            var mode = 'offset', seq = 0, loading = false;
+            var page = 1, pageSize = 10;                                   // offset state
+            var lastId = '', hasMore = true, count = 0, total = 0;         // cursor state
+
+            var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
+            var stat = function (t0, n) { $stat.text('Last request: ' + Math.round(performance.now() - t0) + ' ms, ' + n + ' rows'); };
+
+            function rowHtml(c, n) {
+                return '<tr><td class="text-center">' + n + '</td><td><strong>' + esc(c.name) + '</strong></td>' +
+                    '<td>' + (c.gstin ? esc(c.gstin) : '<span class="text-muted">Not Available</span>') + '</td><td>' + esc(c.mobile) + '</td><td>' + esc(c.address) + '</td>' +
+                    '<td class="text-center text-nowrap">' +
+                    '<button type="button" class="btn btn-sm btn-info text-white me-1 btn-modal" title="View Details" aria-label="View Details" data-url="' + esc(c.detailsUrl) + '"><i class="bi bi-info"></i></button>' +
+                    '<button type="button" class="btn btn-sm btn-warning btn-modal" title="Edit Customer" aria-label="Edit Customer" data-url="' + esc(c.editUrl) + '"><i class="bi bi-pencil-square"></i></button>' +
+                    '</td></tr>';
+            }
+
+            // ================= OFFSET MODE: numbered pages =================
+            function pageItem(label, target, disabled, active) {
+                return '<li class="page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '') + '"><a class="page-link" href="#" data-page="' + target + '">' + label + '</a></li>';
+            }
+
+            function renderPager(totalPages) {
+                if (totalPages <= 1) { $pager.empty(); return; }
+                var nums = [1, totalPages];
+                for (var n = page - 2; n <= page + 2; n++) if (n > 1 && n < totalPages) nums.push(n);
+                nums = nums.filter(function (v, i) { return nums.indexOf(v) === i; }).sort(function (a, b) { return a - b; });
+
+                var html = pageItem('&laquo;', page - 1, page === 1), prev = 0;
+                nums.forEach(function (n) {
+                    if (n - prev > 1) html += '<li class="page-item disabled"><span class="page-link">…</span></li>';
+                    html += pageItem(n, n, false, n === page);
+                    prev = n;
+                });
+                $pager.html(html + pageItem('&raquo;', page + 1, page === totalPages));
+            }
+
+            function loadPage(p) {
+                var mySeq = ++seq, t0 = performance.now();
+                $body.css('opacity', .5);
+
+                $.getJSON(pageUrl, { searchText: $('#searchText').val(), page: p, pageSize: pageSize })
+                    .done(function (r) {
+                        if (mySeq !== seq) return;
+                        page = r.page; total = r.total;
+                        $body.html($.map(r.items, function (c, k) { return rowHtml(c, (page - 1) * pageSize + k + 1); }).join(''));
+                        $empty.toggleClass('d-none', r.items.length > 0);
+                        renderPager(r.totalPages);
+                        var first = r.items.length ? (page - 1) * pageSize + 1 : 0;
+                        $info.text('Showing ' + first + ' to ' + ((page - 1) * pageSize + r.items.length) + ' of ' + total + ' customers');
+                        stat(t0, r.items.length);
+                    })
+                    .fail(function () { if (mySeq === seq) showAlert('Unable to load customers. Please try again.', 'danger'); })
+                    .always(function () { if (mySeq === seq) $body.css('opacity', 1); });
+            }
+
+            $(document).on('click', '#pager .page-link', function (e) {
+                e.preventDefault();
+                if ($(this).parent().is('.disabled, .active')) return;
+                loadPage(+$(this).data('page'));
+            });
+            $('#pageSize').on('change', function () { pageSize = +this.value; loadPage(1); });
+
+            // ================= CURSOR MODE: infinite scroll =================
+            function loadMore(reset) {
+                if (reset) { seq++; lastId = ''; hasMore = true; count = 0; total = 0; $body.empty(); $end.addClass('d-none'); $empty.addClass('d-none'); $info.text(''); }
+                else if (loading || !hasMore) return;
+
+                var mySeq = seq, t0 = performance.now();
+                loading = true;
+                $spin.removeClass('d-none');
+
+                $.getJSON(cursorUrl, { searchText: $('#searchText').val(), lastId: lastId, pageSize: CURSOR_BATCH })
+                    .done(function (r) {
+                        if (mySeq !== seq) return;
+                        if (r.total) total = r.total;                     // total only comes with the first batch
+                        $body.append($.map(r.items, function (c) { return rowHtml(c, ++count); }).join(''));
+                        if (r.items.length) lastId = r.items[r.items.length - 1].id;
+                        hasMore = r.hasMore;
+                        $empty.toggleClass('d-none', count > 0);
+                        $end.toggleClass('d-none', hasMore || count === 0);
+                        $info.text(count ? 'Showing ' + count + ' of ' + total + ' customers' : '');
+                        stat(t0, r.items.length);
+                        setTimeout(function () { if (mode === 'cursor' && hasMore && sentinel.getBoundingClientRect().top < window.innerHeight + 300) loadMore(false); }, 0);
+                    })
+                    .fail(function () { if (mySeq === seq) showAlert('Unable to load customers. Please try again.', 'danger'); })
+                    .always(function () { if (mySeq === seq) { loading = false; $spin.addClass('d-none'); } });
+            }
+
+            new IntersectionObserver(function (e) { if (mode === 'cursor' && e[0].isIntersecting) loadMore(false); }, { rootMargin: '300px' }).observe(sentinel);
+
+            // ================= Mode switch + shared behaviour =================
+            function refresh() { if (mode === 'offset') loadPage(1); else loadMore(true); }
+
+            function setMode(m) {
+                mode = m; seq++; loading = false;
+                $body.empty(); $info.text(''); $stat.text(''); $empty.addClass('d-none'); $end.addClass('d-none'); $spin.addClass('d-none'); $pager.empty();
+                $pagerWrap.toggleClass('d-none', m !== 'offset');
+                $pageSizeBox.toggleClass('d-none', m !== 'offset');
+                $sentinel.toggleClass('d-none', m !== 'cursor');
+                $note.html(notes[m]);
+                refresh();
+            }
+
+            $('input[name=mode]').on('change', function () { setMode(this.value); });
+
+            var typing;
+            $('#searchText').on('input', function () { clearTimeout(typing); typing = setTimeout(refresh, 350); });
+            $('#filterForm').on('submit', function (e) { e.preventDefault(); refresh(); });
+            $('#resetBtn').on('click', function () { $('#searchText').val(''); refresh(); });
+
+            setMode('offset');
+
+            // ---------- Modal / form helpers ----------
+            function parseForm() {
+                var $form = $content.find('form');
+                if ($form.length) { $form.removeData('validator').removeData('unobtrusiveValidation'); $.validator.unobtrusive.parse($form); }
+            }
+
+            function showAlert(message, type) {
+                if (!message) return;
+                $('#alertPlaceholder').html('<div class="alert alert-' + (type || 'success') + ' alert-dismissible fade show" role="alert">' + esc(message) +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
+            }
+
+            $(document).on('click', '.btn-modal', function () {
+                var url = $(this).data('url'), size = $(this).data('size') || 'modal-lg';
+                $.get(url)
+                    .done(function (html) {
+                        $dialog.removeClass('modal-sm modal-md modal-lg modal-xl').addClass(size);
+                        $content.html(html);
+                        parseForm();
+                        modal.show();
+                    })
+                    .fail(function () { alert('Unable to load the form. Please try again.'); });
+            });
+
+            $(document).on('submit', '#appModalContent form', function (e) {
+                e.preventDefault();
+                var $form = $(this);
+                if (!$form.valid()) return;
+                var $btn = $form.find('[type=submit]').prop('disabled', true);
+
+                $.post($form.attr('action'), $form.serialize())
+                    .done(function (res) {
+                        if (typeof res === 'object') {
+                            modal.hide();
+                            showAlert(res.message, res.success ? 'success' : 'danger');
+                            if (res.success) refresh();
+                        } else { $content.html(res); parseForm(); }
+                    })
+                    .fail(function () { alert('Something went wrong. Please try again.'); })
+                    .always(function () { $btn.prop('disabled', false); });
+            });
+
+            modalEl.addEventListener('hidden.bs.modal', function () { $content.empty(); });
+        });
+    </script>
+}

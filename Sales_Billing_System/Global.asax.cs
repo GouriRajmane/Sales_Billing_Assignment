@@ -21,6 +21,7 @@ namespace Sales_Billing_System
             BundleConfig.RegisterBundles(BundleTable.Bundles);
         }
 
+
         protected void Application_BeginRequest(object sender, EventArgs e)
         {
             // Check if it's the first request in a thread-safe manner
@@ -34,7 +35,7 @@ namespace Sales_Billing_System
 
                         // Define your default landing page URL structure here
                         // For example: "/Home/Index" or a specific route
-                        string defaultUrl = UrlHelper.GenerateContentUrl("~/SalesInvoice/Index", new HttpContextWrapper(HttpContext.Current));
+                        string defaultUrl = UrlHelper.GenerateContentUrl("~/SalesInvoice/Compare", new HttpContextWrapper(HttpContext.Current));
 
                         // If you want a specific controller/action explicitly:
                         // string defaultUrl = "/Home/Index"; 

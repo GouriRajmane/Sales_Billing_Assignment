@@ -123,6 +123,12 @@ namespace Sales_Billing_System.Services
             return _productRepository.SearchProduct(searchText);
         }
 
+        public PagedResult<Product_Master> GetProductsCursor(int pageSize, string searchText, int? lastId)
+        {
+            if (pageSize < 1) pageSize = 20;
+            if (pageSize > 100) pageSize = 100;
+            return _productRepository.GetProductsCursor(pageSize, searchText, lastId);
+        }
         public PagedResult<Product_Master> GetProductsPaged(
             int pageNumber,
             int pageSize,

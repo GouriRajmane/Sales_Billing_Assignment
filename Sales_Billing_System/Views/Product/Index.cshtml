@@ -84,12 +84,17 @@
             <h2 class="mb-1">Product Master</h2>
             <p class="text-muted mb-0">Manage products, pricing, categories and GST.</p>
         </div>
+        <div>
+            <button type="button"
+                    class="btn btn-success btn-modal"
+                    data-url="@Url.Action("Create", "Product")">
+                <i class="bi bi-plus-circle me-1"></i> Add Product
+            </button>
+        </div>
 
-        <button type="button"
-                class="btn btn-success btn-modal"
-                data-url="@Url.Action("Create", "Product")">
-            <i class="bi bi-plus-circle me-1"></i> Add Product
-        </button>
+        <a href="@Url.Action("Compare", "Product")" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-diagram-3 me-1"></i> Compare pagination
+        </a>
     </div>
 
     <div id="alertPlaceholder">

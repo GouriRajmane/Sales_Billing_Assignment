@@ -290,6 +290,9 @@
     <Content Include="Views\Product\ConfirmToggleStatus.cshtml" />
     <Content Include="Views\SalesInvoice\ConfirmCancel.cshtml" />
     <Content Include="Views\Product\Details.cshtml" />
+    <Content Include="Views\SalesInvoice\Compare.cshtml" />
+    <Content Include="Views\Product\Compare.cshtml" />
+    <Content Include="Views\Customer\Compare.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
