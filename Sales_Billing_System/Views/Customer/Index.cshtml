@@ -1,17 +1,8 @@
-﻿@model Sales_Billing_System.Models.PagedResult<Sales_Billing_System.Models.Customer_Master>
-@using System.Linq
-
-@{
-    ViewBag.Title = "Customers";
+﻿@{
+    ViewBag.Title = "Customers - Pagination Modes";
 }
 
-<!-- DataTables (Bootstrap 5 skin) + Buttons + Responsive -->
-<link href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
-<link href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css" rel="stylesheet" />
-<link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet" />
-
 <style>
-    /* ---------- DataTable polish (same as Sales Invoice) ---------- */
     #customersTable thead th {
         font-size: .78rem;
         text-transform: uppercase;
@@ -26,180 +17,145 @@
         padding-bottom: .65rem;
     }
 
-    .data-table-card div.dataTables_wrapper div.dataTables_length select {
-        border-radius: .375rem;
+    #customersTable tbody tr {
+        animation: rowIn .25s ease-out;
     }
 
-    .data-table-card .dt-buttons .btn {
-        margin-right: .35rem;
-    }
-
-    .data-table-card div.dataTables_wrapper div.dataTables_info {
-        color: #6c757d;
-        font-size: .875rem;
-        padding-top: .5rem;
-    }
-
-    .data-table-card .page-item.active .page-link {
+    #modeSwitch .btn-check:checked + .btn {
         background-color: #198754;
         border-color: #198754;
-        color: #ffffff; /* Adds white text color when active */
+        color: #fff;
     }
-    .data-table-card .page-link {
+
+    .page-item.active .page-link {
+        background-color: #198754;
+        border-color: #198754;
+        color: #fff;
+    }
+
+    .page-link {
         color: #198754;
     }
 
-    .data-table-card .page-item.disabled .page-link {
-        color: #6c757d;
-    }
+    @@keyframes rowIn {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
 
-    table.dataTable > thead > tr > th.sorting:before,
-    table.dataTable > thead > tr > th.sorting:after {
-        opacity: .35;
+        to {
+            opacity: 1;
+            transform: none;
+        }
     }
 </style>
 
 <div class="container mt-5">
 
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h2 class="mb-1">Customer Master</h2>
-            <p class="text-muted mb-0">Manage your customers and their information.</p>
+            <p class="text-muted mb-0">Compare numbered pages (offset) with infinite scroll (cursor) on the same data.</p>
         </div>
-        <div>
-            <button type="button" class="btn btn-success btn-modal"
-                    data-url="@Url.Action("Create", "Customer")">
-                <i class="bi bi-plus-circle me-1"></i> Add Customer
-            </button>
-        </div>
-        <a href="@Url.Action("Compare", "Customer")" class="btn btn-outline-secondary me-2">
-            <i class="bi bi-diagram-3 me-1"></i> Compare pagination
-        </a>
+        <button type="button" class="btn btn-success btn-modal" data-url="@Url.Action("Create", "Customer")">
+            <i class="bi bi-plus-circle me-1"></i> Add Customer
+        </button>
     </div>
 
-    <!-- Alert Placeholder (used by AJAX messages) -->
+    <!-- Mode switch -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-3">
+            <div id="modeSwitch" class="btn-group" role="group" aria-label="Pagination mode">
+                <input type="radio" class="btn-check" name="mode" id="modeOffset" value="offset" autocomplete="off" checked />
+                <label class="btn btn-outline-success" for="modeOffset"><i class="bi bi-list-ol me-1"></i> Page numbers (Offset)</label>
+                <input type="radio" class="btn-check" name="mode" id="modeCursor" value="cursor" autocomplete="off" />
+                <label class="btn btn-outline-success" for="modeCursor"><i class="bi bi-arrow-down-circle me-1"></i> Infinite scroll (Cursor)</label>
+            </div>
+            <div id="modeNote" class="small text-muted flex-grow-1"></div>
+            <span id="statInfo" class="badge text-bg-light border"></span>
+        </div>
+    </div>
+
     <div id="alertPlaceholder">
         @if (TempData["SuccessMessage"] != null)
         {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                @TempData["SuccessMessage"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
         }
-
         @if (TempData["ErrorMessage"] != null)
         {
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                @TempData["ErrorMessage"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">@TempData["ErrorMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
         }
     </div>
 
-    <!-- Search: filters the table live while typing; Enter / Search runs a server search -->
+    <!-- Search (shared by both modes) -->
     <div class="card shadow-sm mb-4">
         <div class="card-body">
-            @using (Html.BeginForm("Index", "Customer", FormMethod.Get))
-            {
+            <form id="filterForm" autocomplete="off">
                 <div class="row g-2 align-items-end">
                     <div class="col-md-9">
                         <label class="form-label"><strong>Search</strong></label>
                         <div class="input-group">
                             <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                            @Html.TextBox("searchText", ViewBag.SearchText as string,
-                                     new { @class = "form-control", placeholder = "Enter customer name, mobile number, GSTIN or address", autocomplete = "off" })
+                            <input type="text" id="searchText" class="form-control" placeholder="Enter customer name, mobile number, GSTIN or address" />
                         </div>
                     </div>
                     <div class="col-md-3 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary flex-fill" title="Search">
-                            <i class="bi bi-search me-1"></i> Search
-                        </button>
-                        <a href="@Url.Action("Index", "Customer")"
-                           class="btn btn-outline-secondary" title="Reset filters">
-                            <i class="bi bi-arrow-counterclockwise"></i>
-                        </a>
+                        <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-search me-1"></i> Search</button>
+                        <button type="button" id="resetBtn" class="btn btn-outline-secondary" title="Reset filters"><i class="bi bi-arrow-counterclockwise"></i></button>
                     </div>
                 </div>
-            }
+            </form>
         </div>
     </div>
 
-    <!-- Reloaded via AJAX after Create / Edit -->
-    <div id="customerListContainer">
+    <!-- Customer list -->
+    <div class="card shadow-sm">
+        <div class="card-body">
 
-        @if (Model != null && Model.Items != null && Model.TotalRecords > Model.Items.Count())
-        {
-            <div class="alert alert-warning py-2 small">
-                <i class="bi bi-exclamation-triangle me-1"></i>
-                Showing the first <strong>@Model.Items.Count()</strong> of <strong>@Model.TotalRecords</strong> customers.
-                Use the search above to narrow the list.
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div id="countInfo" class="text-muted small"></div>
+                <div id="pageSizeBox" class="d-flex align-items-center gap-2 small text-muted">
+                    Show
+                    <select id="pageSize" class="form-select form-select-sm" style="width:auto;">
+                        <option>10</option>
+                        <option>25</option>
+                        <option>50</option>
+                        <option>100</option>
+                    </select>
+                    entries
+                </div>
             </div>
-        }
 
-        <div class="card shadow-sm data-table-card">
-            <div class="card-body">
-
-                <table id="customersTable" class="table table-hover align-middle table-bordered w-100">
+            <div class="table-responsive">
+                <table id="customersTable" class="table table-hover align-middle table-bordered mb-0">
                     <thead class="table-success">
                         <tr>
                             <th class="text-center" style="width:60px;">Sr. No.</th>
                             <th>Customer Name</th>
-                            <th>GSTIN</th>
-                            <th>Mobile Number</th>
-                            <th>Address</th>
-                            <th class="text-center" style="width:110px;">Actions</th>
+                            <th>Details</th>
+                            <th class="text-center" style="width:90px;">Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @if (Model != null && Model.Items != null)
-                        {
-                            foreach (var customer in Model.Items)
-                            {
-                                <tr>
-                                    <td class="text-center"></td> @* numbered by DataTables on every draw *@
-                                    <td><strong>@customer.CustomerName</strong></td>
-                                    <td>
-                                        @if (!string.IsNullOrWhiteSpace(customer.GSTIN))
-                                        {
-                                            @customer.GSTIN
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">Not Available</span>
-                                        }
-                                    </td>
-                                    <td>@customer.MobileNumber</td>
-                                    <td>@customer.Address</td>
-
-                                    <td class="text-center text-nowrap">
-                                        <button type="button"
-                                                class="btn btn-sm btn-info text-white me-1 btn-modal"
-                                                title="View Details"
-                                                aria-label="View Details"
-                                                data-url="@Url.Action("Details", "Customer", new { id = customer.CustomerId })">
-                                            <i class="bi bi-info"></i>
-                                        </button>
-
-                                        <button type="button"
-                                                class="btn btn-sm btn-warning btn-modal"
-                                                title="Edit Customer"
-                                                aria-label="Edit Customer"
-                                                data-url="@Url.Action("Edit", "Customer", new { id = customer.CustomerId })">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
+                    <tbody id="customerBody"></tbody>
                 </table>
+            </div>
 
+            <div id="emptyState" class="text-center text-muted py-5 d-none">
+                <i class="bi bi-inbox fs-2"></i>
+                <h5 class="mt-2 mb-1">No Customers Found</h5>
+                <p class="mb-0">Try another search or add a new customer.</p>
+            </div>
+
+            <!-- Offset mode: numbered pager -->
+            <nav id="pagerWrap" class="mt-3"><ul id="pager" class="pagination pagination-sm justify-content-center mb-0"></ul></nav>
+
+            <!-- Cursor mode: scroll sentinel -->
+            <div id="scrollSentinel" class="text-center text-muted small py-3 d-none">
+                <span id="spinner" class="d-none"><span class="spinner-border spinner-border-sm text-success me-2"></span>Loading more customers...</span>
+                <span id="endMsg" class="d-none"><i class="bi bi-check2-circle me-1"></i>You're all caught up</span>
             </div>
         </div>
-
-    </div> <!-- /customerListContainer -->
-
+    </div>
 </div>
 
 <!-- Shared Modal (Create / Edit / Details load here) -->
@@ -213,143 +169,157 @@
 {
     @Scripts.Render("~/bundles/jqueryval")
 
-    <!-- DataTables core + Bootstrap 5 + Buttons (Excel/CSV/Print/Column visibility) + Responsive -->
-    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
-
     <script>
         $(function () {
-
             $.ajaxSetup({ cache: false });
 
-            var modalEl = document.getElementById('appModal');
-            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            var $dialog = $('#appModalDialog');
-            var $content = $('#appModalContent');
+            var modalEl = document.getElementById('appModal'), modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            var $dialog = $('#appModalDialog'), $content = $('#appModalContent');
+            var $body = $('#customerBody'), $empty = $('#emptyState'), $info = $('#countInfo'), $stat = $('#statInfo'), $note = $('#modeNote');
+            var $pager = $('#pager'), $pagerWrap = $('#pagerWrap'), $pageSizeBox = $('#pageSizeBox');
+            var $sentinel = $('#scrollSentinel'), $spin = $('#spinner'), $end = $('#endMsg'), sentinel = $sentinel[0];
+            var CURSOR_BATCH = 20;
+            var pageUrl = '@Url.Action("LoadCustomersPage", "Customer")';     // offset -> sp_GetCustomersPaged
+            var cursorUrl = '@Url.Action("LoadCustomers", "Customer")';       // cursor -> sp_GetCustomersCursor
 
-            // ---------- DataTable ----------
-            $.fn.dataTable.Buttons.defaults.dom.button.className = 'btn btn-sm';
+            var notes = {
+                offset: '<strong>Offset:</strong> LIMIT/OFFSET. Jump to any page and see the total page count; gets slower on very deep pages and can shift if rows are added while browsing.',
+                cursor: '<strong>Cursor:</strong> "next rows after the last one you have", A-Z by name. Constant speed at any depth and stable while data changes; forward-only.'
+            };
 
-            function initCustomerTable() {
-                var $table = $('#customersTable');
-                if (!$table.length) return;
+            var mode = 'offset', seq = 0, loading = false;
+            var page = 1, pageSize = 10;                                   // offset state
+            var lastId = '', hasMore = true, count = 0, total = 0;         // cursor state
 
-                var exportOpts = { columns: [1, 2, 3, 4], orthogonal: 'export' };
+            var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
+            var stat = function (t0, n) { $stat.text('Last request: ' + Math.round(performance.now() - t0) + ' ms, ' + n + ' rows'); };
 
-                var dt = $table.DataTable({
-                    responsive: true,
-                    pageLength: 10,
-                    lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-                    order: [[1, 'asc']],
-                    autoWidth: false,
-                    // No built-in filter box: the Search field above drives the table live
-                    dom: "<'row align-items-center mb-3'<'col-md-8'B><'col-md-4 text-md-end'l>>" +
-                        "<'row'<'col-12'tr>>" +
-                        "<'row align-items-center mt-3'<'col-md-6'i><'col-md-6'p>>",
-                    buttons: [
-                        {
-                            extend: 'excelHtml5',
-                            text: '<i class="bi bi-file-earmark-excel me-1"></i>Excel',
-                            className: 'btn-outline-success',
-                            title: 'Customers',
-                            exportOptions: exportOpts
-                        },
-                        {
-                            extend: 'print',
-                            text: '<i class="bi bi-printer me-1"></i>Print',
-                            className: 'btn-outline-secondary',
-                            title: 'Customers',
-                            exportOptions: exportOpts
-                        },
-                        {
-                            extend: 'colvis',
-                            text: '<i class="bi bi-columns-gap me-1"></i>Columns',
-                            className: 'btn-outline-primary',
-                            columns: [1, 2, 3, 4]
-                        }
-                    ],
-                    columnDefs: [
-                        { targets: [0, 5], orderable: false, searchable: false },
-                        { targets: [0, 5], className: 'text-center' },
-                        { targets: 1, responsivePriority: 1 },
-                        { targets: 5, responsivePriority: 2 },
-                        { targets: 3, responsivePriority: 3 }
-                    ],
-                    language: {
-                        lengthMenu: 'Show _MENU_ entries',
-                        info: 'Showing _START_ to _END_ of _TOTAL_ customers',
-                        infoEmpty: 'No customers to show',
-                        infoFiltered: '(filtered from _MAX_)',
-                        emptyTable: '<div class="text-muted py-4"><h5 class="mb-1">No Customers Found</h5><p class="mb-0">There are currently no customers available.</p></div>',
-                        zeroRecords: '<div class="text-muted py-4"><h5 class="mb-1">No Matching Customers</h5><p class="mb-0">Try a different search term.</p></div>',
-                        paginate: { previous: '&laquo;', next: '&raquo;' }
-                    },
-                    // Keep Sr. No. continuous across pages and correct after sorting / filtering
-                    drawCallback: function () {
-                        var api = this.api();
-                        var start = api.page.info().start;
-                        api.column(0, { page: 'current' }).nodes().each(function (cell, i) {
-                            cell.innerHTML = start + i + 1;
-                        });
-                    }
+            // One text "Details" cell: mobile, GSTIN and address as plain text, plus a link that opens the details modal
+            function detailsHtml(c) {
+                var f = function (k, v) { return '<span class="text-muted">' + k + ':</span> ' + v; };
+                return '<div class="small">' + f('Mobile', esc(c.mobile)) + ' &middot; ' + f('GSTIN', c.gstin ? esc(c.gstin) : '<span class="text-muted">Not Available</span>') +
+                    '<div>' + f('Address', esc(c.address)) + '</div>' +
+                    '<button type="button" class="btn btn-link btn-sm p-0 mt-1 btn-modal" data-url="' + esc(c.detailsUrl) + '"><i class="bi bi-box-arrow-up-right me-1"></i>View details</button></div>';
+            }
+
+            function rowHtml(c, n) {
+                return '<tr><td class="text-center">' + n + '</td><td><strong>' + esc(c.name) + '</strong></td>' +
+                    '<td>' + detailsHtml(c) + '</td>' +
+                    '<td class="text-center text-nowrap">' +
+                    '<button type="button" class="btn btn-sm btn-warning btn-modal" title="Edit Customer" aria-label="Edit Customer" data-url="' + esc(c.editUrl) + '"><i class="bi bi-pencil-square"></i></button>' +
+                    '</td></tr>';
+            }
+
+            // ================= OFFSET MODE: numbered pages =================
+            function pageItem(label, target, disabled, active) {
+                return '<li class="page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '') + '"><a class="page-link" href="#" data-page="' + target + '">' + label + '</a></li>';
+            }
+
+            function renderPager(totalPages) {
+                if (totalPages <= 1) { $pager.empty(); return; }
+                var nums = [1, totalPages];
+                for (var n = page - 2; n <= page + 2; n++) if (n > 1 && n < totalPages) nums.push(n);
+                nums = nums.filter(function (v, i) { return nums.indexOf(v) === i; }).sort(function (a, b) { return a - b; });
+
+                var html = pageItem('&laquo;', page - 1, page === 1), prev = 0;
+                nums.forEach(function (n) {
+                    if (n - prev > 1) html += '<li class="page-item disabled"><span class="page-link">…</span></li>';
+                    html += pageItem(n, n, false, n === page);
+                    prev = n;
                 });
-
-                // Re-apply whatever is already typed in the Search box (page load / after reload)
-                var q = $('#searchText').val();
-                if (q) dt.search(q).draw();
+                $pager.html(html + pageItem('&raquo;', page + 1, page === totalPages));
             }
 
-            // Live filtering while typing (Enter / Search button still does a full server search)
-            //$(document).on('input', '#searchText', function () {
-            //    if ($.fn.DataTable.isDataTable('#customersTable')) {
-            //        $('#customersTable').DataTable().search(this.value).draw();
-            //    }
-            //});
+            function loadPage(p) {
+                var mySeq = ++seq, t0 = performance.now();
+                $body.css('opacity', .5);
 
-            function reloadCustomerList() {
-                if ($.fn.DataTable.isDataTable('#customersTable')) {
-                    $('#customersTable').DataTable().destroy();
-                }
-                // Reload only the list, keeping current search
-                $('#customerListContainer')
-                    .load(window.location.href + ' #customerListContainer > *', initCustomerTable);
+                $.getJSON(pageUrl, { searchText: $('#searchText').val(), page: p, pageSize: pageSize })
+                    .done(function (r) {
+                        if (mySeq !== seq) return;
+                        page = r.page; total = r.total;
+                        $body.html($.map(r.items, function (c, k) { return rowHtml(c, (page - 1) * pageSize + k + 1); }).join(''));
+                        $empty.toggleClass('d-none', r.items.length > 0);
+                        renderPager(r.totalPages);
+                        var first = r.items.length ? (page - 1) * pageSize + 1 : 0;
+                        $info.text('Showing ' + first + ' to ' + ((page - 1) * pageSize + r.items.length) + ' of ' + total + ' customers');
+                        stat(t0, r.items.length);
+                    })
+                    .fail(function () { if (mySeq === seq) showAlert('Unable to load customers. Please try again.', 'danger'); })
+                    .always(function () { if (mySeq === seq) $body.css('opacity', 1); });
             }
 
-            initCustomerTable();
+            $(document).on('click', '#pager .page-link', function (e) {
+                e.preventDefault();
+                if ($(this).parent().is('.disabled, .active')) return;
+                loadPage(+$(this).data('page'));
+            });
+            $('#pageSize').on('change', function () { pageSize = +this.value; loadPage(1); });
+
+            // ================= CURSOR MODE: infinite scroll =================
+            function loadMore(reset) {
+                if (reset) { seq++; lastId = ''; hasMore = true; count = 0; total = 0; $body.empty(); $end.addClass('d-none'); $empty.addClass('d-none'); $info.text(''); }
+                else if (loading || !hasMore) return;
+
+                var mySeq = seq, t0 = performance.now();
+                loading = true;
+                $spin.removeClass('d-none');
+
+                $.getJSON(cursorUrl, { searchText: $('#searchText').val(), lastId: lastId, pageSize: CURSOR_BATCH })
+                    .done(function (r) {
+                        if (mySeq !== seq) return;
+                        if (r.total) total = r.total;                     // total only comes with the first batch
+                        $body.append($.map(r.items, function (c) { return rowHtml(c, ++count); }).join(''));
+                        if (r.items.length) lastId = r.items[r.items.length - 1].id;
+                        hasMore = r.hasMore;
+                        $empty.toggleClass('d-none', count > 0);
+                        $end.toggleClass('d-none', hasMore || count === 0);
+                        $info.text(count ? 'Showing ' + count + ' of ' + total + ' customers' : '');
+                        stat(t0, r.items.length);
+                        setTimeout(function () { if (mode === 'cursor' && hasMore && sentinel.getBoundingClientRect().top < window.innerHeight + 300) loadMore(false); }, 0);
+                    })
+                    .fail(function () { if (mySeq === seq) showAlert('Unable to load customers. Please try again.', 'danger'); })
+                    .always(function () { if (mySeq === seq) { loading = false; $spin.addClass('d-none'); } });
+            }
+
+            new IntersectionObserver(function (e) { if (mode === 'cursor' && e[0].isIntersecting) loadMore(false); }, { rootMargin: '300px' }).observe(sentinel);
+
+            // ================= Mode switch + shared behaviour =================
+            function refresh() { if (mode === 'offset') loadPage(1); else loadMore(true); }
+
+            function setMode(m) {
+                mode = m; seq++; loading = false;
+                $body.empty(); $info.text(''); $stat.text(''); $empty.addClass('d-none'); $end.addClass('d-none'); $spin.addClass('d-none'); $pager.empty();
+                $pagerWrap.toggleClass('d-none', m !== 'offset');
+                $pageSizeBox.toggleClass('d-none', m !== 'offset');
+                $sentinel.toggleClass('d-none', m !== 'cursor');
+                $note.html(notes[m]);
+                refresh();
+            }
+
+            $('input[name=mode]').on('change', function () { setMode(this.value); });
+
+            var typing;
+            $('#searchText').on('input', function () { clearTimeout(typing); typing = setTimeout(refresh, 350); });
+            $('#filterForm').on('submit', function (e) { e.preventDefault(); refresh(); });
+            $('#resetBtn').on('click', function () { $('#searchText').val(''); refresh(); });
+
+            setMode('offset');
 
             // ---------- Modal / form helpers ----------
             function parseForm() {
                 var $form = $content.find('form');
-                if ($form.length) {
-                    $form.removeData('validator').removeData('unobtrusiveValidation');
-                    $.validator.unobtrusive.parse($form);
-                }
+                if ($form.length) { $form.removeData('validator').removeData('unobtrusiveValidation'); $.validator.unobtrusive.parse($form); }
             }
 
             function showAlert(message, type) {
                 if (!message) return;
-
-                $('#alertPlaceholder').html(
-                    '<div class="alert alert-' + (type || 'success') + ' alert-dismissible fade show" role="alert">' +
-                    $('<div>').text(message).html() +
-                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
-                    '</div>');
+                $('#alertPlaceholder').html('<div class="alert alert-' + (type || 'success') + ' alert-dismissible fade show" role="alert">' + esc(message) +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
             }
 
-            // Open modal: load Create / Edit / Details
-            // (delegated, so it also works for rows redrawn by DataTables and responsive child rows)
             $(document).on('click', '.btn-modal', function () {
-                var url = $(this).data('url');
-                var size = $(this).data('size') || 'modal-lg';
-
+                var url = $(this).data('url'), size = $(this).data('size') || 'modal-lg';
                 $.get(url)
                     .done(function (html) {
                         $dialog.removeClass('modal-sm modal-md modal-lg modal-xl').addClass(size);
@@ -357,18 +327,13 @@
                         parseForm();
                         modal.show();
                     })
-                    .fail(function () {
-                        alert('Unable to load the form. Please try again.');
-                    });
+                    .fail(function () { alert('Unable to load the form. Please try again.'); });
             });
 
-            // Submit any form inside the modal via AJAX
             $(document).on('submit', '#appModalContent form', function (e) {
                 e.preventDefault();
-
                 var $form = $(this);
                 if (!$form.valid()) return;
-
                 var $btn = $form.find('[type=submit]').prop('disabled', true);
 
                 $.post($form.attr('action'), $form.serialize())
@@ -376,28 +341,14 @@
                         if (typeof res === 'object') {
                             modal.hide();
                             showAlert(res.message, res.success ? 'success' : 'danger');
-
-                            if (res.success) {
-                                reloadCustomerList();
-                            }
-                        }
-                        else {
-                            // Validation failed: show form again with errors
-                            $content.html(res);
-                            parseForm();
-                        }
+                            if (res.success) refresh();
+                        } else { $content.html(res); parseForm(); }
                     })
-                    .fail(function () {
-                        alert('Something went wrong. Please try again.');
-                    })
-                    .always(function () {
-                        $btn.prop('disabled', false);
-                    });
+                    .fail(function () { alert('Something went wrong. Please try again.'); })
+                    .always(function () { $btn.prop('disabled', false); });
             });
 
-            modalEl.addEventListener('hidden.bs.modal', function () {
-                $content.empty();
-            });
+            modalEl.addEventListener('hidden.bs.modal', function () { $content.empty(); });
         });
     </script>
 }

@@ -35,7 +35,7 @@ namespace Sales_Billing_System
 
                         // Define your default landing page URL structure here
                         // For example: "/Home/Index" or a specific route
-                        string defaultUrl = UrlHelper.GenerateContentUrl("~/SalesInvoice/Compare", new HttpContextWrapper(HttpContext.Current));
+                        string defaultUrl = UrlHelper.GenerateContentUrl("~/SalesInvoice/Index", new HttpContextWrapper(HttpContext.Current));
 
                         // If you want a specific controller/action explicitly:
                         // string defaultUrl = "/Home/Index"; 

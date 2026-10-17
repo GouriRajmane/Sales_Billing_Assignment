@@ -5,20 +5,13 @@
 @using System.Linq
 
 @{
-    ViewBag.Title = "Products";
+    ViewBag.Title = "Products - Pagination Modes";
 }
 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
-<!-- DataTables (Bootstrap 5 skin) + Buttons + Responsive -->
-<link href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
-<link href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css" rel="stylesheet" />
-<link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet" />
-<link href="https://cdn.datatables.net/rowgroup/1.4.1/css/rowGroup.bootstrap5.min.css" rel="stylesheet" />
-
 <style>
-    /* ---------- DataTable polish (same as Sales Invoice) ---------- */
     #productsTable thead th {
         font-size: .78rem;
         text-transform: uppercase;
@@ -33,8 +26,11 @@
         padding-bottom: .65rem;
     }
 
-    /* Category group header rows */
-    #productsTable tr.dtrg-group td {
+    #productsTable tbody tr {
+        animation: rowIn .25s ease-out;
+    }
+
+    #productsTable tr.group-row td {
         background: #e8f5ee;
         border-left: 4px solid #198754;
         color: #146c43;
@@ -42,254 +38,146 @@
         padding: .55rem .85rem;
     }
 
-    .data-table-card div.dataTables_wrapper div.dataTables_length select {
-        border-radius: .375rem;
-    }
-
-    .data-table-card .dt-buttons .btn {
-        margin-right: .35rem;
-    }
-
-    .data-table-card div.dataTables_wrapper div.dataTables_info {
-        color: #6c757d;
-        font-size: .875rem;
-        padding-top: .5rem;
-    }
-
-    .data-table-card .page-item.active .page-link {
+    #modeSwitch .btn-check:checked + .btn {
         background-color: #198754;
         border-color: #198754;
-        color: #ffffff; /* Adds white text color when active */
+        color: #fff;
     }
 
-    .data-table-card .page-link {
+    .page-item.active .page-link {
+        background-color: #198754;
+        border-color: #198754;
+        color: #fff;
+    }
+
+    .page-link {
         color: #198754;
     }
 
+    @@keyframes rowIn {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
 
-    .data-table-card .page-item.disabled .page-link {
-        color: #6c757d;
-    }
-
-    table.dataTable > thead > tr > th.sorting:before,
-    table.dataTable > thead > tr > th.sorting:after {
-        opacity: .35;
+        to {
+            opacity: 1;
+            transform: none;
+        }
     }
 </style>
 
 <div class="container mt-5">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h2 class="mb-1">Product Master</h2>
-            <p class="text-muted mb-0">Manage products, pricing, categories and GST.</p>
+            <p class="text-muted mb-0">Compare numbered pages (offset) with infinite scroll (cursor) on the same data.</p>
         </div>
-        <div>
-            <button type="button"
-                    class="btn btn-success btn-modal"
-                    data-url="@Url.Action("Create", "Product")">
-                <i class="bi bi-plus-circle me-1"></i> Add Product
-            </button>
-        </div>
+        <button type="button" class="btn btn-success btn-modal" data-url="@Url.Action("Create", "Product")">
+            <i class="bi bi-plus-circle me-1"></i> Add Product
+        </button>
+    </div>
 
-        <a href="@Url.Action("Compare", "Product")" class="btn btn-outline-secondary me-2">
-            <i class="bi bi-diagram-3 me-1"></i> Compare pagination
-        </a>
+    <!-- Mode switch -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-3">
+            <div id="modeSwitch" class="btn-group" role="group" aria-label="Pagination mode">
+                <input type="radio" class="btn-check" name="mode" id="modeOffset" value="offset" autocomplete="off" checked />
+                <label class="btn btn-outline-success" for="modeOffset"><i class="bi bi-list-ol me-1"></i> Page numbers (Offset)</label>
+                <input type="radio" class="btn-check" name="mode" id="modeCursor" value="cursor" autocomplete="off" />
+                <label class="btn btn-outline-success" for="modeCursor"><i class="bi bi-arrow-down-circle me-1"></i> Infinite scroll (Cursor)</label>
+            </div>
+            <div id="modeNote" class="small text-muted flex-grow-1"></div>
+            <span id="statInfo" class="badge text-bg-light border"></span>
+        </div>
     </div>
 
     <div id="alertPlaceholder">
         @if (TempData["SuccessMessage"] != null)
         {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                @TempData["SuccessMessage"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">@TempData["SuccessMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
         }
-
         @if (TempData["ErrorMessage"] != null)
         {
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                @TempData["ErrorMessage"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">@TempData["ErrorMessage"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
         }
     </div>
 
-    <!-- Search: filters the table live while typing; Enter / Search runs a server search -->
+    <!-- Search (shared by both modes) -->
     <div class="card shadow-sm mb-4">
         <div class="card-body">
-            @using (Html.BeginForm("Index", "Product", FormMethod.Get))
-            {
+            <form id="filterForm" autocomplete="off">
                 <div class="row g-2 align-items-end">
                     <div class="col-md-9">
                         <label class="form-label fw-bold" for="searchText">Search</label>
-
                         <div class="input-group">
                             <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                            @Html.TextBox("searchText", ViewBag.SearchText as string,
-                                     new
-                                     {
-                                         @class = "form-control",
-                                         placeholder = "Type to filter by product, SKU, category, unit or status",
-                                         autocomplete = "off"
-                                     })
+                            <input type="text" id="searchText" class="form-control" placeholder="Search by product name, SKU, category or subcategory..." />
                         </div>
                     </div>
-
                     <div class="col-md-3 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary flex-fill">
-                            <i class="bi bi-search me-1"></i> Search
-                        </button>
-
-                        <a href="@Url.Action("Index", "Product")"
-                           class="btn btn-outline-secondary"
-                           title="Reset search">
-                            <i class="bi bi-arrow-counterclockwise"></i>
-                        </a>
+                        <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-search me-1"></i> Search</button>
+                        <button type="button" id="resetBtn" class="btn btn-outline-secondary" title="Reset search"><i class="bi bi-arrow-counterclockwise"></i></button>
                     </div>
                 </div>
-            }
+            </form>
         </div>
     </div>
 
-    <!-- Reloaded via AJAX after Create / Edit / Status change -->
-    <div id="productListContainer">
+    <!-- Product list -->
+    <div class="card shadow-sm">
+        <div class="card-body">
 
-        @if (Model != null && Model.Items != null && Model.TotalRecords > Model.Items.Count())
-        {
-            <div class="alert alert-warning py-2 small">
-                <i class="bi bi-exclamation-triangle me-1"></i>
-                Showing the first <strong>@Model.Items.Count()</strong> of <strong>@Model.TotalRecords</strong> products.
-                Use the search above to narrow the list.
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div id="countInfo" class="text-muted small"></div>
+                <div id="pageSizeBox" class="d-flex align-items-center gap-2 small text-muted">
+                    Show
+                    <select id="pageSize" class="form-select form-select-sm" style="width:auto;">
+                        <option>10</option>
+                        <option>25</option>
+                        <option>50</option>
+                        <option>100</option>
+                    </select>
+                    entries
+                </div>
             </div>
-        }
 
-        <div class="card shadow-sm data-table-card">
-            <div class="card-body">
-
-                <table id="productsTable" class="table table-hover table-bordered align-middle w-100">
+            <div class="table-responsive">
+                <table id="productsTable" class="table table-hover table-bordered align-middle mb-0 mode-offset">
                     <thead class="table-success">
                         <tr>
-                            <th class="text-center" style="width: 60px;">Sr. No.</th>
-                            <th>Category</th>
-                            <th>SubCategory</th>
+                            <th class="text-center" style="width:60px;">Sr. No.</th>
                             <th>Product Name</th>
-                            <th>SKU</th>
-                            <th>Unit</th>
+                            <th>Details</th>
                             <th class="text-end">Selling Price</th>
-                            <th class="text-end">GST %</th>
                             <th class="text-center">Status</th>
-                            <th class="text-center" style="width:140px;">Actions</th>
+                            <th class="text-center" style="width:110px;">Actions</th>
                         </tr>
                     </thead>
-
-                    <tbody>
-                        @if (Model != null && Model.Items != null)
-                        {
-                            foreach (var product in Model.Items)
-                            {
-                                <tr>
-                                    <td class="text-center"></td> @* numbered by DataTables on every draw *@
-
-                                    <td>
-                                        @if (product.Category != null &&
-                                             !string.IsNullOrWhiteSpace(product.Category.CategoryName))
-                                        {
-                                            @product.Category.CategoryName
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">Not assigned</span>
-                                        }
-                                    </td>
-
-                                    <td>
-                                        @if (product.SubCategory != null &&
-                                             !string.IsNullOrWhiteSpace(product.SubCategory.SubCategoryName))
-                                        {
-                                            @product.SubCategory.SubCategoryName
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">Not assigned</span>
-                                        }
-                                    </td>
-
-                                    <td><strong>@product.ProductName</strong></td>
-
-                                    <td>
-                                        @if (!string.IsNullOrWhiteSpace(product.SKU))
-                                        {
-                                            @product.SKU
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">N/A</span>
-                                        }
-                                    </td>
-
-                                    <td>@product.Unit</td>
-
-                                    <td class="text-end"
-                                        data-order="@(product.SellingPrice.ToString("0.00", CultureInfo.InvariantCulture))"
-                                        data-export="@(product.SellingPrice.ToString("0.00", CultureInfo.InvariantCulture))">
-                                        ₹ @product.SellingPrice.ToString("N2")
-                                    </td>
-
-                                    <td class="text-end"
-                                        data-order="@(product.GSTPercentage.ToString("0.00", CultureInfo.InvariantCulture))"
-                                        data-export="@(product.GSTPercentage.ToString("0.00", CultureInfo.InvariantCulture))">
-                                        @product.GSTPercentage.ToString("N2") %
-                                    </td>
-
-                                    <td class="text-center">
-                                        @if (product.IsActive)
-                                        {
-                                            <span class="badge bg-success">Active</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-danger">Inactive</span>
-                                        }
-                                    </td>
-
-                                    <td class="text-center text-nowrap">
-                                        <button type="button"
-                                                class="btn btn-sm btn-info text-white me-1 btn-modal"
-                                                title="View Details"
-                                                data-url="@Url.Action("Details", "Product", new { id = product.ProductId })">
-                                            <i class="bi bi-info"></i>
-                                        </button>
-
-                                        <button type="button"
-                                                class="btn btn-sm btn-warning me-1 btn-modal"
-                                                title="Edit Product"
-                                                data-url="@Url.Action("Edit", "Product", new { id = product.ProductId })">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </button>
-
-                                        <button type="button"
-                                                class="btn btn-sm @(product.IsActive ? "btn-danger" : "btn-success") btn-modal"
-                                                title="@(product.IsActive ? "Deactivate Product" : "Activate Product")"
-                                                data-size="modal-md"
-                                                data-url="@Url.Action("ConfirmToggleStatus", "Product", new { id = product.ProductId })">
-                                            <i class="bi @(product.IsActive ? "bi-toggle-on" : "bi-toggle-off")"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
+                    <tbody id="productBody"></tbody>
                 </table>
+            </div>
 
+            <div id="emptyState" class="text-center text-muted py-5 d-none">
+                <i class="bi bi-inbox fs-2"></i>
+                <h5 class="mt-2 mb-1">No Products Found</h5>
+                <p class="mb-0">Try another search or add a new product.</p>
+            </div>
+
+            <!-- Offset mode: numbered pager -->
+            <nav id="pagerWrap" class="mt-3"><ul id="pager" class="pagination pagination-sm justify-content-center mb-0"></ul></nav>
+
+            <!-- Cursor mode: scroll sentinel -->
+            <div id="scrollSentinel" class="text-center text-muted small py-3 d-none">
+                <span id="spinner" class="d-none"><span class="spinner-border spinner-border-sm text-success me-2"></span>Loading more products...</span>
+                <span id="endMsg" class="d-none"><i class="bi bi-check2-circle me-1"></i>You're all caught up</span>
             </div>
         </div>
-
-    </div> <!-- /productListContainer -->
+    </div>
 </div>
 
-<div class="modal fade" id="appModal" tabindex="-1"
-     aria-labelledby="appModalLabel" aria-hidden="true">
+<div class="modal fade" id="appModal" tabindex="-1" aria-labelledby="appModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" id="appModalDialog">
         <div class="modal-content" id="appModalContent"></div>
     </div>
@@ -299,170 +187,177 @@
     @Scripts.Render("~/bundles/jqueryval")
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-    <!-- DataTables core + Bootstrap 5 + Buttons (Excel/CSV/Print/Column visibility) + Responsive -->
-    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
-    <script src="https://cdn.datatables.net/rowgroup/1.4.1/js/dataTables.rowGroup.min.js"></script>
-
     <script>
         $(function () {
             $.ajaxSetup({ cache: false });
 
-            var modalEl = document.getElementById('appModal');
-            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            var $dialog = $('#appModalDialog');
-            var $content = $('#appModalContent');
+            var modalEl = document.getElementById('appModal'), modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            var $dialog = $('#appModalDialog'), $content = $('#appModalContent');
+            var $table = $('#productsTable'), $body = $('#productBody'), $empty = $('#emptyState'), $info = $('#countInfo'), $stat = $('#statInfo'), $note = $('#modeNote');
+            var $pager = $('#pager'), $pagerWrap = $('#pagerWrap'), $pageSizeBox = $('#pageSizeBox');
+            var $sentinel = $('#scrollSentinel'), $spin = $('#spinner'), $end = $('#endMsg'), sentinel = $sentinel[0];
+            var CURSOR_BATCH = 20;
+            var pageUrl = '@Url.Action("LoadProductsPage", "Product")';     // offset -> sp_GetProductsPaged
+            var cursorUrl = '@Url.Action("LoadProducts", "Product")';       // cursor -> sp_GetProductsCursor
 
-            // ---------- DataTable ----------
-            $.fn.dataTable.Buttons.defaults.dom.button.className = 'btn btn-sm';
+            var notes = {
+                offset: '<strong>Offset:</strong> LIMIT/OFFSET, grouped by category with counts. Jump to any page and see the total page count; gets slower on very deep pages and can shift if rows are added while browsing.',
+                cursor: '<strong>Cursor:</strong> "next rows after the last one you have", grouped by category with counts. Constant speed at any depth and stable while data changes; forward-only.'
+            };
 
-            function initProductTable() {
-                var $table = $('#productsTable');
-                if (!$table.length) return;
+            var mode = 'offset', seq = 0, loading = false;
+            var page = 1, pageSize = 10;                                            // offset state
+            var lastId = '', lastCat = null, groups = {}, hasMore = true, count = 0, total = 0;   // cursor state
 
-                var exportOpts = { columns: [1, 2, 3, 4, 5, 6, 7, 8], orthogonal: 'export' };
-                var counts = {};
-                var catName = function (html) { return $('<div>').html(html).text().trim(); };
+            var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
+            var muted = function (s, fallback) { return s ? esc(s) : '<span class="text-muted">' + fallback + '</span>'; };
+            var stat = function (t0, n) { $stat.text('Last request: ' + Math.round(performance.now() - t0) + ' ms, ' + n + ' rows'); };
 
-                var dt = $table.DataTable({
-                    responsive: true,
-                    pageLength: 10,
-                    lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-                    orderFixed: [[1, 'asc']],   // keeps rows grouped by Category; other columns sort inside each group
-                    order: [[3, 'asc']],
-                    // Products per category, counted over all rows matching the current filter (not just this page)
-                    preDrawCallback: function () {
-                        counts = {};
-                        this.api().rows({ search: 'applied' }).data().each(function (r) {
-                            var n = catName(r[1]);
-                            counts[n] = (counts[n] || 0) + 1;
-                        });
-                    },
-                    rowGroup: {
-                        dataSrc: 1,
-                        startRender: function (rows, group) {
-                            var n = catName(group), c = counts[n] || rows.count();
-                            return '<i class="bi bi-folder2-open me-2"></i>' + $('<div>').text(n).html() +
-                                ' <span class="badge bg-success ms-2">' + c + (c === 1 ? ' product' : ' products') + '</span>';
-                        }
-                    },
-                    autoWidth: false,
-                    // No built-in filter box: the Search field above drives the table live
-                    dom: "<'row align-items-center mb-3'<'col-md-8'B><'col-md-4 text-md-end'l>>" +
-                        "<'row'<'col-12'tr>>" +
-                        "<'row align-items-center mt-3'<'col-md-6'i><'col-md-6'p>>",
-                    buttons: [
-                        {
-                            extend: 'excelHtml5',
-                            text: '<i class="bi bi-file-earmark-excel me-1"></i>Excel',
-                            className: 'btn-outline-success',
-                            title: 'Products',
-                            exportOptions: exportOpts
-                        },
-                        {
-                            extend: 'print',
-                            text: '<i class="bi bi-printer me-1"></i>Print',
-                            className: 'btn-outline-secondary',
-                            title: 'Products',
-                            exportOptions: exportOpts
-                        },
-                        {
-                            extend: 'colvis',
-                            text: '<i class="bi bi-columns-gap me-1"></i>Columns',
-                            className: 'btn-outline-primary',
-                            columns: [1, 2, 3, 4, 5, 6, 7, 8]
-                        }
-                    ],
-                    columnDefs: [
-                        { targets: [0, 9], orderable: false, searchable: false },
-                        { targets: 1, visible: false },   // category is shown in the group header instead
-                        { targets: 0, className: 'text-center' },
-                        { targets: [6, 7], className: 'text-end' },
-                        { targets: [8, 9], className: 'text-center' },
-                        { targets: 3, responsivePriority: 1 },
-                        { targets: 9, responsivePriority: 2 },
-                        { targets: 6, responsivePriority: 3 },
-                        { targets: 8, responsivePriority: 4 }
-                    ],
-                    language: {
-                        lengthMenu: 'Show _MENU_ entries',
-                        info: 'Showing _START_ to _END_ of _TOTAL_ products',
-                        infoEmpty: 'No products to show',
-                        infoFiltered: '(filtered from _MAX_)',
-                        emptyTable: '<div class="text-muted py-4"><i class="bi bi-inbox fs-2"></i><h5 class="mt-2 mb-1">No Products Found</h5><p class="mb-0">Try another search or add a new product.</p></div>',
-                        zeroRecords: '<div class="text-muted py-4"><h5 class="mb-1">No Matching Products</h5><p class="mb-0">Try a different search term.</p></div>',
-                        paginate: { previous: '&laquo;', next: '&raquo;' }
-                    },
-                    // Keep Sr. No. continuous across pages and correct after sorting / filtering
-                    drawCallback: function () {
-                        var api = this.api();
-                        var start = api.page.info().start;
-                        api.column(0, { page: 'current' }).nodes().each(function (cell, i) {
-                            cell.innerHTML = start + i + 1;
-                        });
-                    }
+            function groupHtml(p) {
+                var n = groups[p.categoryId];
+                return '<tr class="group-row"><td colspan="6"><i class="bi bi-folder2-open me-2"></i>' + esc(p.category || 'Not assigned') +
+                    (n ? ' <span class="badge bg-success ms-2">' + n + (n === 1 ? ' product' : ' products') + '</span>' : '') + '</td></tr>';
+            }
+
+            // One text "Details" cell: sub-category, SKU, unit, price and GST as plain text, plus a link that opens the details modal
+            function detailsHtml(p) {
+                var f = function (k, v) { return '<span class="text-muted">' + k + ':</span> ' + v; };
+                return '<div class="small">' + f('Sub-category', muted(p.subCategory, 'Not assigned')) + ' &middot; ' + f('SKU', muted(p.sku, 'N/A')) + ' &middot; ' + f('Unit', esc(p.unit)) +
+                    '<div>' + f('GST', esc(p.gst) + '%') + '</div>' +
+                    '<button type="button" class="btn btn-link btn-sm p-0 mt-1 btn-modal" data-url="' + esc(p.detailsUrl) + '"><i class="bi bi-box-arrow-up-right me-1"></i>View details</button></div>';
+            }
+
+            function rowHtml(p, n) {
+                return '<tr><td class="text-center">' + n + '</td>' +
+                    '<td><strong>' + esc(p.name) + '</strong></td><td>' + detailsHtml(p) + '</td>' +
+                    '<td class="text-end">₹ ' + esc(p.price) + '</td>' +
+                    '<td class="text-center"><span class="badge bg-' + (p.isActive ? 'success' : 'danger') + '">' + (p.isActive ? 'Active' : 'Inactive') + '</span></td>' +
+                    '<td class="text-center text-nowrap">' +
+                    '<button type="button" class="btn btn-sm btn-warning me-1 btn-modal" title="Edit Product" data-url="' + esc(p.editUrl) + '"><i class="bi bi-pencil-square"></i></button>' +
+                    '<button type="button" class="btn btn-sm btn-' + (p.isActive ? 'danger' : 'success') + ' btn-modal" title="' + (p.isActive ? 'Deactivate' : 'Activate') + ' Product" data-size="modal-md" data-url="' + esc(p.toggleUrl) + '">' +
+                    '<i class="bi ' + (p.isActive ? 'bi-toggle-on' : 'bi-toggle-off') + '"></i></button></td></tr>';
+            }
+
+            // ================= OFFSET MODE: numbered pages, grouped by category =================
+            function pageItem(label, target, disabled, active) {
+                return '<li class="page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '') + '"><a class="page-link" href="#" data-page="' + target + '">' + label + '</a></li>';
+            }
+
+            function renderPager(totalPages) {
+                if (totalPages <= 1) { $pager.empty(); return; }
+                var nums = [1, totalPages];
+                for (var n = page - 2; n <= page + 2; n++) if (n > 1 && n < totalPages) nums.push(n);
+                nums = nums.filter(function (v, i) { return nums.indexOf(v) === i; }).sort(function (a, b) { return a - b; });
+
+                var html = pageItem('&laquo;', page - 1, page === 1), prev = 0;
+                nums.forEach(function (n) {
+                    if (n - prev > 1) html += '<li class="page-item disabled"><span class="page-link">…</span></li>';
+                    html += pageItem(n, n, false, n === page);
+                    prev = n;
                 });
-
-                // Re-apply whatever is already typed in the Search box (page load / after reload)
-                var q = $('#searchText').val();
-                if (q) dt.search(q).draw();
+                $pager.html(html + pageItem('&raquo;', page + 1, page === totalPages));
             }
 
-            // Live filtering while typing (Enter / Search button still does a full server search)
-            //$(document).on('input', '#searchText', function () {
-            //    if ($.fn.DataTable.isDataTable('#productsTable')) {
-            //        $('#productsTable').DataTable().search(this.value).draw();
-            //    }
-            //});
+            function loadPage(p) {
+                var mySeq = ++seq, t0 = performance.now();
+                $body.css('opacity', .5);
 
-            function loadProductList() {
-                if ($.fn.DataTable.isDataTable('#productsTable')) {
-                    $('#productsTable').DataTable().destroy();
-                }
-
-                var url = window.location.pathname + window.location.search;
-
-                $('#productListContainer').load(
-                    url + ' #productListContainer > *',
-                    initProductTable
-                );
+                $.getJSON(pageUrl, { searchText: $('#searchText').val(), page: p, pageSize: pageSize })
+                    .done(function (r) {
+                        if (mySeq !== seq) return;
+                        page = r.page; total = r.total;
+                        groups = r.groups || {}; lastCat = null;      // full per-category counts for the headers
+                        $body.html($.map(r.items, function (p, k) {
+                            var html = (p.categoryId !== lastCat ? groupHtml(p) : '') + rowHtml(p, (page - 1) * pageSize + k + 1);
+                            lastCat = p.categoryId;
+                            return html;
+                        }).join(''));
+                        $empty.toggleClass('d-none', r.items.length > 0);
+                        renderPager(r.totalPages);
+                        var first = r.items.length ? (page - 1) * pageSize + 1 : 0;
+                        $info.text('Showing ' + first + ' to ' + ((page - 1) * pageSize + r.items.length) + ' of ' + total + ' products');
+                        stat(t0, r.items.length);
+                    })
+                    .fail(function () { if (mySeq === seq) showAlert('Unable to load products. Please try again.', 'danger'); })
+                    .always(function () { if (mySeq === seq) $body.css('opacity', 1); });
             }
 
-            initProductTable();
+            $(document).on('click', '#pager .page-link', function (e) {
+                e.preventDefault();
+                if ($(this).parent().is('.disabled, .active')) return;
+                loadPage(+$(this).data('page'));
+            });
+            $('#pageSize').on('change', function () { pageSize = +this.value; loadPage(1); });
+
+            // ================= CURSOR MODE: infinite scroll, grouped by category =================
+            function loadMore(reset) {
+                if (reset) { seq++; lastId = ''; lastCat = null; groups = {}; hasMore = true; count = 0; total = 0; $body.empty(); $end.addClass('d-none'); $empty.addClass('d-none'); $info.text(''); }
+                else if (loading || !hasMore) return;
+
+                var mySeq = seq, t0 = performance.now();
+                loading = true;
+                $spin.removeClass('d-none');
+
+                $.getJSON(cursorUrl, { searchText: $('#searchText').val(), lastId: lastId, pageSize: CURSOR_BATCH })
+                    .done(function (r) {
+                        if (mySeq !== seq) return;
+                        if (!lastId) { groups = r.groups || {}; total = r.total; }     // counts come with the first batch only
+                        $body.append($.map(r.items, function (p) {
+                            var html = (p.categoryId !== lastCat ? groupHtml(p) : '') + rowHtml(p, ++count);
+                            lastCat = p.categoryId;
+                            return html;
+                        }).join(''));
+                        if (r.items.length) lastId = r.items[r.items.length - 1].id;
+                        hasMore = r.hasMore;
+                        $empty.toggleClass('d-none', count > 0);
+                        $end.toggleClass('d-none', hasMore || count === 0);
+                        $info.text(count ? 'Showing ' + count + ' of ' + total + ' products' : '');
+                        stat(t0, r.items.length);
+                        setTimeout(function () { if (mode === 'cursor' && hasMore && sentinel.getBoundingClientRect().top < window.innerHeight + 300) loadMore(false); }, 0);
+                    })
+                    .fail(function () { if (mySeq === seq) showAlert('Unable to load products. Please try again.', 'danger'); })
+                    .always(function () { if (mySeq === seq) { loading = false; $spin.addClass('d-none'); } });
+            }
+
+            new IntersectionObserver(function (e) { if (mode === 'cursor' && e[0].isIntersecting) loadMore(false); }, { rootMargin: '300px' }).observe(sentinel);
+
+            // ================= Mode switch + shared behaviour =================
+            function refresh() { if (mode === 'offset') loadPage(1); else loadMore(true); }
+
+            function setMode(m) {
+                mode = m; seq++; loading = false;
+                $body.empty(); $info.text(''); $stat.text(''); $empty.addClass('d-none'); $end.addClass('d-none'); $spin.addClass('d-none'); $pager.empty();
+                $table.toggleClass('mode-offset', m === 'offset').toggleClass('mode-cursor', m === 'cursor');
+                $pagerWrap.toggleClass('d-none', m !== 'offset');
+                $pageSizeBox.toggleClass('d-none', m !== 'offset');
+                $sentinel.toggleClass('d-none', m !== 'cursor');
+                $note.html(notes[m]);
+                refresh();
+            }
+
+            $('input[name=mode]').on('change', function () { setMode(this.value); });
+
+            var typing;
+            $('#searchText').on('input', function () { clearTimeout(typing); typing = setTimeout(refresh, 350); });
+            $('#filterForm').on('submit', function (e) { e.preventDefault(); refresh(); });
+            $('#resetBtn').on('click', function () { $('#searchText').val(''); refresh(); });
+
+            setMode('offset');
 
             // ---------- Modal / form helpers ----------
-
-            // Search-as-you-type dropdowns (Category, SubCategory, Unit).
-            // Nothing is loaded until the user types.
             function initLazySelects() {
                 $content.find('.lazy-select').each(function () {
-                    var $el = $(this);
-                    var $parent = $($el.data('parent'));
-                    var hint = $el.data('placeholder');
+                    var $el = $(this), $parent = $($el.data('parent')), hint = $el.data('placeholder');
 
                     $el.select2({
-                        theme: 'bootstrap-5',
-                        dropdownParent: $('#appModal'),
-                        width: '76%',
-                        placeholder: hint,
-                        minimumInputLength: 1,
+                        theme: 'bootstrap-5', dropdownParent: $('#appModal'), width: '76%', placeholder: hint, minimumInputLength: 1,
                         language: {
                             inputTooShort: function () { return hint; },
                             noResults: function () { return 'No matches found'; },
                             searching: function () { return 'Searching...'; }
                         },
                         ajax: {
-                            url: $el.data('url'),
-                            dataType: 'json',
-                            delay: 250,
+                            url: $el.data('url'), dataType: 'json', delay: 250,
                             data: function (params) {
                                 var d = { term: params.term };
                                 if ($parent.length) d.categoryId = $parent.val() || 0;
@@ -471,15 +366,10 @@
                         }
                     });
 
-                    // SubCategory depends on Category: disabled until a category
-                    // is chosen, and cleared whenever the category changes.
                     if ($parent.length) {
                         $el.prop('disabled', !$parent.val());
-
                         $parent.on('change', function () {
-                            $el.empty().append('<option></option>')
-                                .prop('disabled', !$parent.val())
-                                .trigger('change');
+                            $el.empty().append('<option></option>').prop('disabled', !$parent.val()).trigger('change');
                         });
                     }
                 });
@@ -487,115 +377,52 @@
 
             function prepareForm() {
                 var $form = $content.find('form');
-
-                if ($form.length) {
-                    $form.removeData('validator')
-                        .removeData('unobtrusiveValidation');
-
-                    $.validator.unobtrusive.parse($form);
-                }
-
+                if ($form.length) { $form.removeData('validator').removeData('unobtrusiveValidation'); $.validator.unobtrusive.parse($form); }
                 initLazySelects();
             }
 
             function showAlert(message, type) {
                 if (!message) return;
-
-                var safeMessage = $('<div>').text(message).html();
-
-                $('#alertPlaceholder').html(
-                    '<div class="alert alert-' + (type || 'success') +
-                    ' alert-dismissible fade show" role="alert">' +
-                    safeMessage +
-                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
-                    '</div>'
-                );
+                $('#alertPlaceholder').html('<div class="alert alert-' + (type || 'success') + ' alert-dismissible fade show" role="alert">' + esc(message) +
+                    '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
             }
 
-            // Load a modal partial.
-            // (delegated, so it also works for rows redrawn by DataTables and responsive child rows)
             $(document).on('click', '.btn-modal', function () {
-                var url = $(this).data('url');
-                var size = $(this).data('size') || 'modal-lg';
-
+                var url = $(this).data('url'), size = $(this).data('size') || 'modal-lg';
                 if (!url) return;
 
-                $content.html(
-                    '<div class="modal-body text-center py-5">' +
-                    '<div class="spinner-border text-success" role="status"></div>' +
-                    '<p class="mt-2 mb-0">Loading...</p></div>'
-                );
-
-                $dialog.removeClass('modal-sm modal-md modal-lg modal-xl')
-                    .addClass(size);
-
+                $content.html('<div class="modal-body text-center py-5"><div class="spinner-border text-success" role="status"></div><p class="mt-2 mb-0">Loading...</p></div>');
+                $dialog.removeClass('modal-sm modal-md modal-lg modal-xl').addClass(size);
                 modal.show();
 
                 $.get(url)
-                    .done(function (html) {
-                        $content.html(html);
-                        prepareForm();
-                    })
-                    .fail(function () {
-                        $content.html(
-                            '<div class="modal-body">' +
-                            '<div class="alert alert-danger mb-0">' +
-                            'Unable to load this page. Please try again.' +
-                            '</div></div>'
-                        );
-                    });
+                    .done(function (html) { $content.html(html); prepareForm(); })
+                    .fail(function () { $content.html('<div class="modal-body"><div class="alert alert-danger mb-0">Unable to load this page. Please try again.</div></div>'); });
             });
 
-            // Submit Create/Edit/Status forms using AJAX.
             $(document).on('submit', '#appModalContent form', function (e) {
                 e.preventDefault();
-
                 var $form = $(this);
-
                 if ($form.data('submitting')) return;
-
                 if ($form.valid && !$form.valid()) return;
 
-                var $submitButton = $form.find('[type="submit"]');
-                var originalHtml = $submitButton.html();
-
+                var $btn = $form.find('[type="submit"]'), originalHtml = $btn.html();
                 $form.data('submitting', true);
-                $submitButton.prop('disabled', true).text('Please wait...');
+                $btn.prop('disabled', true).text('Please wait...');
 
-                $.ajax({
-                    url: $form.attr('action'),
-                    type: ($form.attr('method') || 'POST').toUpperCase(),
-                    data: $form.serialize()
-                })
+                $.ajax({ url: $form.attr('action'), type: ($form.attr('method') || 'POST').toUpperCase(), data: $form.serialize() })
                     .done(function (res) {
-                        if (res && typeof res === 'object' &&
-                            Object.prototype.hasOwnProperty.call(res, 'success')) {
-
-                            if (res.success) {
-                                modal.hide();
-                                showAlert(res.message || 'Product saved successfully.', 'success');
-                                loadProductList();
-                            } else {
-                                showAlert(res.message || 'Unable to save the product.', 'danger');
-                            }
-                        } else {
-                            // The server returned the partial view with validation errors.
-                            $content.html(res);
-                            prepareForm();
-                        }
+                        if (res && typeof res === 'object' && Object.prototype.hasOwnProperty.call(res, 'success')) {
+                            if (res.success) { modal.hide(); showAlert(res.message || 'Product saved successfully.', 'success'); refresh(); }
+                            else showAlert(res.message || 'Unable to save the product.', 'danger');
+                        } else { $content.html(res); prepareForm(); }
                     })
-                    .fail(function () {
-                        showAlert('The request failed. Please check your input and try again.', 'danger');
-                    })
-                    .always(function () {
-                        $form.removeData('submitting');
-                        $submitButton.prop('disabled', false).html(originalHtml);
-                    });
+                    .fail(function () { showAlert('The request failed. Please check your input and try again.', 'danger'); })
+                    .always(function () { $form.removeData('submitting'); $btn.prop('disabled', false).html(originalHtml); });
             });
 
-            modalEl.addEventListener('hidden.bs.modal', function () {
-                $content.empty();
-            });
+            modalEl.addEventListener('hidden.bs.modal', function () { $content.empty(); });
         });
     </script>
 }
+
