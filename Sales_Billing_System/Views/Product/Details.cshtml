@@ -1,11 +1,17 @@
 ﻿@model Sales_Billing_System.Models.Product_Master
 
-@helper Field(string label, object value)
+@helper Row(string label, object value)
 {
-    <div class="col-md-6 mb-3">
-        <label class="form-label fw-bold">@label</label>
-        <div class="form-control bg-light">@value</div>
+    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+        <span class="text-muted">@label</span>
+        <span class="fw-semibold text-end">@value</span>
     </div>
+}
+
+@{
+    string category = Model.Category != null ? Model.Category.CategoryName : "Not assigned";
+    string subCategory = Model.SubCategory != null ? Model.SubCategory.SubCategoryName : "Not assigned";
+    decimal priceWithGst = Model.SellingPrice + (Model.SellingPrice * Model.GSTPercentage / 100);
 }
 
 <div class="modal-header bg-info text-white">
@@ -17,18 +23,65 @@
 </div>
 
 <div class="modal-body">
+
+    <!-- Name, category path and status -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h4 class="mb-1">@Model.ProductName</h4>
+            <div class="text-muted">
+                <i class="bi bi-folder2-open me-1"></i>@category
+                <i class="bi bi-chevron-right small mx-1"></i>@subCategory
+            </div>
+        </div>
+
+        @if (Model.IsActive)
+        {
+            <span class="badge bg-success fs-6">Active</span>
+        }
+        else
+        {
+            <span class="badge bg-danger fs-6">Inactive</span>
+        }
+    </div>
+
+    <!-- Key figures -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="bg-light border rounded p-3 text-center h-100">
+                <div class="small text-muted">Selling Price</div>
+                <div class="fs-4 fw-bold text-success">₹ @Model.SellingPrice.ToString("N2")</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="bg-light border rounded p-3 text-center h-100">
+                <div class="small text-muted">GST</div>
+                <div class="fs-4 fw-bold">@Model.GSTPercentage.ToString("N2") %</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="bg-light border rounded p-3 text-center h-100">
+                <div class="small text-muted">Unit</div>
+                <div class="fs-4 fw-bold">@(string.IsNullOrWhiteSpace(Model.Unit) ? "N/A" : Model.Unit)</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail lists -->
     <div class="row">
-        @Field("Product ID", Model.ProductId)
-        @Field("Product Name", Model.ProductName)
-        @Field("Category", Model.Category != null ? Model.Category.CategoryName : "Not assigned")
-        @Field("SubCategory", Model.SubCategory != null ? Model.SubCategory.SubCategoryName : "Not assigned")
-        @Field("SKU", string.IsNullOrWhiteSpace(Model.SKU) ? "N/A" : Model.SKU)
-        @Field("Unit", string.IsNullOrWhiteSpace(Model.Unit) ? "N/A" : Model.Unit)
-        @Field("Selling Price", "₹ " + Model.SellingPrice.ToString("N2"))
-        @Field("GST Percentage", Model.GSTPercentage.ToString("N2") + " %")
-        @Field("Status", Html.Raw(Model.IsActive
-            ? "<span class='badge bg-success'>Active</span>"
-            : "<span class='badge bg-danger'>Inactive</span>"))
+        <div class="col-md-6 mb-3 mb-md-0">
+            <h6 class="text-uppercase small text-muted fw-bold mb-1">Product</h6>
+            @Row("Product ID", Model.ProductId)
+            @Row("SKU", string.IsNullOrWhiteSpace(Model.SKU) ? "N/A" : Model.SKU)
+            @Row("Category", category)
+            @Row("SubCategory", subCategory)
+        </div>
+
+        <div class="col-md-6">
+            <h6 class="text-uppercase small text-muted fw-bold mb-1">Pricing &amp; history</h6>
+            @Row("Price incl. GST", "₹ " + priceWithGst.ToString("N2"))
+            @Row("Added on", Model.CreatedAt.ToString("dd-MM-yyyy"))
+            @Row("Last updated", Model.UpdatedAt.ToString("dd-MM-yyyy"))
+        </div>
     </div>
 </div>
 

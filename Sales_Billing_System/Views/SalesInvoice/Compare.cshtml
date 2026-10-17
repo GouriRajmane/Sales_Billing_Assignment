@@ -140,11 +140,10 @@
                         <tr>
                             <th class="text-center" style="width:60px;">Sr. No.</th>
                             <th>Invoice Number</th>
-                            <th>Date</th>
-                            <th>Customer</th>
+                            <th>Details</th>
                             <th class="text-end">Grand Total</th>
                             <th class="text-center">Status</th>
-                            <th class="text-center" style="width:140px;">Actions</th>
+                            <th class="text-center" style="width:110px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="invoiceBody"></tbody>
@@ -207,12 +206,18 @@
             var filters = function () { return { searchText: $('#searchText').val(), fromDate: $('#fromDate').val(), toDate: $('#toDate').val() }; };
             var stat = function (t0, n) { $stat.text('Last request: ' + Math.round(performance.now() - t0) + ' ms, ' + n + ' rows'); };
 
+            // One text "Details" cell: date and customer as plain text, plus a link that opens the details modal
+            function detailsHtml(i) {
+                var f = function (k, v) { return '<span class="text-muted">' + k + ':</span> ' + v; };
+                return '<div class="small">' + f('Date', esc(i.date)) + ' &middot; ' + f('Customer', esc(i.customer)) +
+                    '<div><button type="button" class="btn btn-link btn-sm p-0 mt-1 btn-modal" data-size="modal-xl" data-url="' + esc(i.detailsUrl) + '"><i class="bi bi-box-arrow-up-right me-1"></i>View details</button></div></div>';
+            }
+
             function rowHtml(i, n) {
                 var active = i.status === 'Active';
-                return '<tr><td class="text-center">' + n + '</td><td><strong>' + esc(i.invoiceNumber) + '</strong></td><td>' + esc(i.date) + '</td><td>' + esc(i.customer) + '</td>' +
+                return '<tr><td class="text-center">' + n + '</td><td><strong>' + esc(i.invoiceNumber) + '</strong></td><td>' + detailsHtml(i) + '</td>' +
                     '<td class="text-end">₹ ' + esc(i.total) + '</td><td class="text-center"><span class="badge bg-' + (active ? 'success' : 'danger') + '">' + (active ? 'Active' : 'Cancelled') + '</span></td>' +
                     '<td class="text-center text-nowrap">' +
-                    '<button type="button" class="btn btn-sm btn-info me-1 btn-modal" title="View details" data-size="modal-xl" data-url="' + esc(i.detailsUrl) + '"><i class="bi bi-info"></i></button>' +
                     '<a href="' + esc(i.printUrl) + '" target="_blank" class="btn btn-sm btn-secondary me-1" title="Print invoice"><i class="bi bi-printer"></i></a>' +
                     (i.status === 'Cancelled' ? '' : '<button type="button" class="btn btn-sm btn-danger btn-modal" title="Cancel invoice" data-size="modal-md" data-url="' + esc(i.cancelUrl) + '"><i class="bi bi-x-circle"></i></button>') +
                     '</td></tr>';

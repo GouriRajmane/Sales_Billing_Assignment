@@ -132,10 +132,8 @@
                         <tr>
                             <th class="text-center" style="width:60px;">Sr. No.</th>
                             <th>Customer Name</th>
-                            <th>GSTIN</th>
-                            <th>Mobile Number</th>
-                            <th>Address</th>
-                            <th class="text-center" style="width:110px;">Actions</th>
+                            <th>Details</th>
+                            <th class="text-center" style="width:90px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="customerBody"></tbody>
@@ -196,11 +194,18 @@
             var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
             var stat = function (t0, n) { $stat.text('Last request: ' + Math.round(performance.now() - t0) + ' ms, ' + n + ' rows'); };
 
+            // One text "Details" cell: mobile, GSTIN and address as plain text, plus a link that opens the details modal
+            function detailsHtml(c) {
+                var f = function (k, v) { return '<span class="text-muted">' + k + ':</span> ' + v; };
+                return '<div class="small">' + f('Mobile', esc(c.mobile)) + ' &middot; ' + f('GSTIN', c.gstin ? esc(c.gstin) : '<span class="text-muted">Not Available</span>') +
+                    '<div>' + f('Address', esc(c.address)) + '</div>' +
+                    '<button type="button" class="btn btn-link btn-sm p-0 mt-1 btn-modal" data-url="' + esc(c.detailsUrl) + '"><i class="bi bi-box-arrow-up-right me-1"></i>View details</button></div>';
+            }
+
             function rowHtml(c, n) {
                 return '<tr><td class="text-center">' + n + '</td><td><strong>' + esc(c.name) + '</strong></td>' +
-                    '<td>' + (c.gstin ? esc(c.gstin) : '<span class="text-muted">Not Available</span>') + '</td><td>' + esc(c.mobile) + '</td><td>' + esc(c.address) + '</td>' +
+                    '<td>' + detailsHtml(c) + '</td>' +
                     '<td class="text-center text-nowrap">' +
-                    '<button type="button" class="btn btn-sm btn-info text-white me-1 btn-modal" title="View Details" aria-label="View Details" data-url="' + esc(c.detailsUrl) + '"><i class="bi bi-info"></i></button>' +
                     '<button type="button" class="btn btn-sm btn-warning btn-modal" title="Edit Customer" aria-label="Edit Customer" data-url="' + esc(c.editUrl) + '"><i class="bi bi-pencil-square"></i></button>' +
                     '</td></tr>';
             }

@@ -142,14 +142,11 @@
                     <thead class="table-success">
                         <tr>
                             <th class="text-center" style="width:60px;">Sr. No.</th>
-                            <th>SubCategory</th>
                             <th>Product Name</th>
-                            <th>SKU</th>
-                            <th>Unit</th>
+                            <th>Details</th>
                             <th class="text-end">Selling Price</th>
-                            <th class="text-end">GST %</th>
                             <th class="text-center">Status</th>
-                            <th class="text-center" style="width:140px;">Actions</th>
+                            <th class="text-center" style="width:110px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="productBody"></tbody>
@@ -212,17 +209,24 @@
 
             function groupHtml(p) {
                 var n = groups[p.categoryId];
-                return '<tr class="group-row"><td colspan="9"><i class="bi bi-folder2-open me-2"></i>' + esc(p.category || 'Not assigned') +
+                return '<tr class="group-row"><td colspan="6"><i class="bi bi-folder2-open me-2"></i>' + esc(p.category || 'Not assigned') +
                     (n ? ' <span class="badge bg-success ms-2">' + n + (n === 1 ? ' product' : ' products') + '</span>' : '') + '</td></tr>';
             }
 
+            // One text "Details" cell: sub-category, SKU, unit, price and GST as plain text, plus a link that opens the details modal
+            function detailsHtml(p) {
+                var f = function (k, v) { return '<span class="text-muted">' + k + ':</span> ' + v; };
+                return '<div class="small">' + f('Sub-category', muted(p.subCategory, 'Not assigned')) + ' &middot; ' + f('SKU', muted(p.sku, 'N/A')) + ' &middot; ' + f('Unit', esc(p.unit)) +
+                    '<div>' + f('GST', esc(p.gst) + '%') + '</div>' +
+                    '<button type="button" class="btn btn-link btn-sm p-0 mt-1 btn-modal" data-url="' + esc(p.detailsUrl) + '"><i class="bi bi-box-arrow-up-right me-1"></i>View details</button></div>';
+            }
+
             function rowHtml(p, n) {
-                return '<tr><td class="text-center">' + n + '</td><td>' + muted(p.subCategory, 'Not assigned') + '</td>' +
-                    '<td><strong>' + esc(p.name) + '</strong></td><td>' + muted(p.sku, 'N/A') + '</td><td>' + esc(p.unit) + '</td>' +
-                    '<td class="text-end">₹ ' + esc(p.price) + '</td><td class="text-end">' + esc(p.gst) + ' %</td>' +
+                return '<tr><td class="text-center">' + n + '</td>' +
+                    '<td><strong>' + esc(p.name) + '</strong></td><td>' + detailsHtml(p) + '</td>' +
+                    '<td class="text-end">₹ ' + esc(p.price) + '</td>' +
                     '<td class="text-center"><span class="badge bg-' + (p.isActive ? 'success' : 'danger') + '">' + (p.isActive ? 'Active' : 'Inactive') + '</span></td>' +
                     '<td class="text-center text-nowrap">' +
-                    '<button type="button" class="btn btn-sm btn-info text-white me-1 btn-modal" title="View Details" data-url="' + esc(p.detailsUrl) + '"><i class="bi bi-info"></i></button>' +
                     '<button type="button" class="btn btn-sm btn-warning me-1 btn-modal" title="Edit Product" data-url="' + esc(p.editUrl) + '"><i class="bi bi-pencil-square"></i></button>' +
                     '<button type="button" class="btn btn-sm btn-' + (p.isActive ? 'danger' : 'success') + ' btn-modal" title="' + (p.isActive ? 'Deactivate' : 'Activate') + ' Product" data-size="modal-md" data-url="' + esc(p.toggleUrl) + '">' +
                     '<i class="bi ' + (p.isActive ? 'bi-toggle-on' : 'bi-toggle-off') + '"></i></button></td></tr>';
